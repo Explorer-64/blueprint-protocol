@@ -240,6 +240,7 @@ CLICK [data-agent-id="generate-button"]
 ```
 VERIFY url == "/path"
 VERIFY selector_exists [data-agent-id="x"]
+VERIFY selector_not_exists [data-agent-id="x"]
 VERIFY file_type == ".zip"
 VERIFY text_contains [data-agent-id="x"] "string"
 VERIFY http_status == 200
