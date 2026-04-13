@@ -1,0 +1,66 @@
+# BLUEPRINT: Habit Tracker
+# Version: 2.0.0
+# URL: https://yourhabittracker.app
+# Updated: 2026-04-13
+
+## IDENTITY
+name: Habit Tracker
+description: Build and maintain daily habits. Log completions, track streaks, and stay accountable over time.
+category: productivity
+contact: support@yourhabittracker.app
+
+## AUTH
+provider: firebase
+method: email
+
+## ACCESS
+last-resort: ui
+
+## CAPABILITY: log-habit
+description: Mark a habit as complete for today and update the user's streak.
+input:
+  - name: habit-name
+    type: string
+    required: true
+    description: The name of the habit to mark complete.
+output:
+  - type: confirmation
+    description: Habit logged. Streak count updated.
+auth-required: true
+scope: form-submit
+
+### UI
+steps:
+  1. ASSERT-AUTH
+  2. NAVIGATE /dashboard
+  3. WAIT [data-agent-id="habit-list"] (max: 10s)
+  4. CLICK [data-agent-id="habit-<<habit-name>>-complete"]
+  5. WAIT [data-agent-id="streak-updated"] (max: 5s)
+  6. VERIFY selector_exists [data-agent-id="streak-updated"]
+
+## CAPABILITY: add-habit
+description: Create a new habit the user wants to track daily.
+input:
+  - name: habit-name
+    type: string
+    required: true
+    description: Name of the new habit.
+  - name: frequency
+    type: string
+    required: false
+    description: "How often to track it: daily, weekdays, or weekly. Defaults to daily."
+output:
+  - type: confirmation
+    description: Habit created and added to the user's dashboard.
+auth-required: true
+scope: form-submit
+
+### UI
+steps:
+  1. ASSERT-AUTH
+  2. NAVIGATE /habits/new
+  3. INPUT [data-agent-id="habit-name-input"] <<habit-name>>
+  4. SELECT [data-agent-id="frequency-select"] <<frequency>>
+  5. CLICK [data-agent-id="save-habit"]
+  6. WAIT [data-agent-id="habit-saved"] (max: 5s)
+  7. VERIFY selector_exists [data-agent-id="habit-saved"]

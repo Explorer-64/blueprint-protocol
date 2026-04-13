@@ -1,0 +1,109 @@
+# BLUEPRINT: Demo Video Tool
+# Version: 2.0.0
+# URL: https://yourdemotool.app
+# Updated: 2026-04-13
+
+## IDENTITY
+name: Demo Video Tool
+description: Automatically generates demo videos of any blueprint-ready web app — point it at a blueprint.txt URL and it produces a professional walkthrough video with no manual recording, scripting, or re-recording when the UI changes.
+category: marketing
+
+## AUTH
+provider: firebase
+method: email
+
+### UI
+steps:
+  1. NAVIGATE /login
+  2. INPUT [data-agent-id="auth-email"] <<user-email>>
+  3. INPUT [data-agent-id="auth-password"] <<user-password>>
+  4. CLICK [data-agent-id="auth-submit"]
+  5. WAIT [data-agent-id="app-dashboard"] (max: 10s)
+  6. VERIFY selector_exists [data-agent-id="user-menu"]
+
+## MCP
+server: demo-video-mcp
+install: claude mcp add demo-video -- uvx demo-video-mcp --api-key <<api-key>>
+auth: DEMO_VIDEO_API_KEY — user's API key from Account > API Keys
+
+## ACCESS
+preferred: mcp
+last-resort: ui
+
+## CAPABILITY: generate-demo-video
+description: Generate a professional demo video of any blueprint-ready app. Provide the target app's blueprint.txt URL — the tool reads the capability list, follows the UI steps exactly as written, and produces a narrated walkthrough video ready to publish.
+input:
+  - name: blueprint-url
+    type: string
+    required: true
+    description: The full URL of the target app's blueprint.txt (e.g. https://yourapp.com/blueprint.txt). The target app must be blueprint-ready for this to succeed.
+  - name: capability-id
+    type: string
+    required: false
+    description: ID of a specific capability to demo. If omitted, the tool demos all capabilities in sequence.
+  - name: narration-style
+    type: string
+    required: false
+    description: "Tone for the auto-generated narration: professional, casual, or silent. Defaults to professional."
+output:
+  - type: json
+    description: Video job ID and a status URL to poll. Retrieve the finished video using check-video-status.
+auth-required: true
+scope: form-submit
+
+### MCP
+tool: generate_demo_video
+
+### UI
+steps:
+  1. ASSERT-AUTH
+  2. NAVIGATE /new
+  3. INPUT [data-agent-id="blueprint-url-input"] <<blueprint-url>>
+  4. CLICK [data-agent-id="fetch-blueprint"]
+  5. WAIT [data-agent-id="capability-list"] (max: 15s)
+  6. VERIFY selector_exists [data-agent-id="capability-list"]
+  7. CLICK [data-agent-id="generate-video-button"]
+  8. WAIT [data-agent-id="job-confirmed"] (max: 10s)
+  9. VERIFY selector_exists [data-agent-id="job-id"]
+
+## CAPABILITY: check-video-status
+description: Check whether a previously requested demo video has finished rendering and get the download link when it is ready.
+input:
+  - name: job-id
+    type: string
+    required: true
+    description: The job ID returned by generate-demo-video.
+output:
+  - type: json
+    description: "Current status — pending, rendering, complete, or failed — plus a download URL when complete."
+auth-required: true
+scope: read-only
+
+### MCP
+tool: get_video_status
+
+### UI
+steps:
+  1. ASSERT-AUTH
+  2. NAVIGATE /videos/<<job-id>>
+  3. WAIT [data-agent-id="video-status"] (max: 5s)
+  4. VERIFY selector_exists [data-agent-id="video-status"]
+
+## CAPABILITY: list-videos
+description: Retrieve a list of all previously generated demo videos in the user's account, including their status and download links.
+input: []
+output:
+  - type: json
+    description: Array of video records with job ID, target app name, status, and download URL.
+auth-required: true
+scope: read-only
+
+### MCP
+tool: list_videos
+
+### UI
+steps:
+  1. ASSERT-AUTH
+  2. NAVIGATE /videos
+  3. WAIT [data-agent-id="video-list"] (max: 10s)
+  4. VERIFY selector_exists [data-agent-id="video-list"]
