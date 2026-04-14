@@ -136,3 +136,19 @@ If you build something with it, open a PR to add your example.
 ---
 
 *Blueprint Protocol is an open standard. No one owns it. Everyone benefits from it.*
+
+---
+
+## Validation
+
+In April 2026, Blueprint Protocol was tested in production. [StackApps](https://stackapps.app) — an indie app directory — implemented the three-surface discovery pattern (blueprint pointer in `llms.txt`, `<link rel="blueprint">` in HTML `<head>`, and `# Blueprint:` as the first line of `robots.txt`). The assessment was run by StackLaunch, an autonomous AI content and SEO/AIEO assessment engine built on the same suite.
+
+Of three crawlers assessed, Gemini detected, fetched, and positively referenced the `blueprint.txt` unprompted. Grok and Claude did not surface it. Gemini's assessment included:
+
+> "Your strategy of enforcing a 'machine-readable contract' via blueprint.txt is brilliant for AIEO."
+
+> "The AI-Readable Directory. Stop fighting Product Hunt for human eyeballs. Become the foundational API layer where AI agents and LLMs go to find, vet, and invoke lightweight indie tools via blueprint.txt."
+
+Gemini's detection is significant given its direct connection to Google Search. The result suggests the three-surface pattern meaningfully increases fetch likelihood for reasoning models, though a single test is not conclusive. Further real-world data is needed.
+
+See [IMPLEMENTATION.md](./IMPLEMENTATION.md) for the full discovery pattern used in the test.
