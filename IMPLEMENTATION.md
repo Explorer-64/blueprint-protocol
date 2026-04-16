@@ -202,3 +202,103 @@ one-off prompt — essentially inventing an ad-hoc blueprint from scratch to get
 the agents through. The informal blueprint always exists somewhere: in a prompt,
 a comment, a custom fixture. Blueprint Protocol makes it formal, stable,
 permanent, and discoverable.
+
+---
+
+## If You Generated Your Blueprint with AI
+
+AI tools can generate a valid-looking blueprint quickly. That speed comes with
+risk — language models hallucinate routes, understate scope, and declare
+capabilities that don't exist. A blueprint with false entries is worse than no
+blueprint: it causes agents to fail silently and confidently.
+
+This applies even to experienced developers. Generation is fast; verification
+is where quality comes from. Treat any AI-generated blueprint as a first draft
+that requires human review before shipping.
+
+### Verification checklist
+
+**Routes and endpoints**
+- Every `NAVIGATE` path exists and loads the expected page
+- Every `### API` endpoint exists and returns the documented response
+- No routes are declared that require auth the blueprint doesn't declare
+
+**Scope**
+- Every capability's `scope` value is accurate — err toward higher risk, not lower
+- Any capability that deletes, modifies financial data, or changes account settings must be declared `destructive` or `financial-transaction`
+- Do not let a generator assign `read-only` to a capability that writes data
+
+**UI steps**
+- Walk through every declared UI flow manually in a browser
+- Confirm every `data-agent-id` attribute exists in the live UI
+- Confirm every `VERIFY` condition actually fires correctly
+
+**Completeness**
+- Every capability you declared actually exists in the app
+- No capabilities are missing that an agent would reasonably attempt
+- Auth requirements are accurate — not aspirational
+
+### Using an assessment tool
+
+A second pass from an automated assessment tool catches what manual review
+misses. [StackLaunch](https://stackapps.app) runs blueprint assessments against
+live apps, cross-referencing declared capabilities against actual app behavior
+and flagging inconsistencies. Running your blueprint through an assessment tool
+before shipping is the closest thing to a blueprint test suite available today.
+
+### The two-tool workflow
+
+Generate with one AI, verify with another. Ask the second AI to read your
+blueprint against the spec and identify anything declared that cannot be
+verified from the live app. This catches hallucinated routes, wrong scope
+values, and missing capabilities before an agent encounters them in production.
+
+---
+
+## If You Generated Your Blueprint with AI
+
+AI tools can generate a valid-looking blueprint quickly. That speed comes with
+risk — language models hallucinate routes, understate scope, and declare
+capabilities that don't exist. A blueprint with false entries is worse than no
+blueprint: it causes agents to fail silently and confidently.
+
+This applies even to experienced developers. Generation is fast; verification
+is where quality comes from. Treat any AI-generated blueprint as a first draft
+that requires human review before shipping.
+
+### Verification checklist
+
+**Routes and endpoints**
+- Every `NAVIGATE` path exists and loads the expected page
+- Every `### API` endpoint exists and returns the documented response
+- No routes are declared that require auth the blueprint doesn't declare
+
+**Scope**
+- Every capability's `scope` value is accurate — err toward higher risk, not lower
+- Any capability that deletes, modifies financial data, or changes account settings must be declared `destructive` or `financial-transaction`
+- Do not let a generator assign `read-only` to a capability that writes data
+
+**UI steps**
+- Walk through every declared UI flow manually in a browser
+- Confirm every `data-agent-id` attribute exists in the live UI
+- Confirm every `VERIFY` condition actually fires correctly
+
+**Completeness**
+- Every capability you declared actually exists in the app
+- No capabilities are missing that an agent would reasonably attempt
+- Auth requirements are accurate — not aspirational
+
+### Using an assessment tool
+
+Run your blueprint through an automated assessment tool that cross-references
+declared capabilities against actual app behavior before shipping. These tools
+catch what manual review misses — hallucinated routes, mismatched selectors,
+and scope values that don't reflect what the capability actually does. Think of
+it as a test suite for your blueprint.
+
+### The two-tool workflow
+
+Generate with one AI, verify with another. Ask the second AI to read your
+blueprint against the spec and identify anything declared that cannot be
+verified from the live app. This catches hallucinated routes, wrong scope
+values, and missing capabilities before an agent encounters them in production.
