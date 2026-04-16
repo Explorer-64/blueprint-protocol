@@ -127,3 +127,78 @@ Gemini's detection is significant given its direct connection to Google Search.
 The result suggests the three-surface pattern meaningfully increases fetch
 likelihood for reasoning models, though a single test is not conclusive. Further
 real-world data is needed.
+
+---
+
+## Agent Interaction Testing
+
+Beyond discoverability, Blueprint Protocol was tested for its ability to guide
+agents through real app interactions. The test app was
+[Spent](https://stackspent.app) — an AI-powered expense tracker — running
+against a real task: add a $345.87 Home Depot expense assigned to a project
+called "Joe's house."
+
+The test was run with and without a blueprint, using Claude as the agent.
+
+### Without Blueprint
+
+The agent navigated to the correct section of the app and successfully filled
+in the merchant name and amount. It then got stuck attempting to open the
+category dropdown, which uses Radix UI — a component library that generates
+dynamic IDs containing colons (e.g. `#radix-:r3:`). These are not valid CSS
+selectors and cannot be reliably targeted by browser automation. The agent
+timed out after repeated failed attempts.
+
+```
+clicked button#radix-\:r1\:
+clicked button#radix-\:r1\:
+clicked button#radix-\:r1\:
+...
+Timeout 30000ms exceeded
+```
+
+### With Blueprint
+
+The agent followed the declared `data-agent-id` selectors in the blueprint,
+navigated the form without hesitation, and completed the task in full —
+including creating a new project ("Joe's house") that did not yet exist, an
+edge case the blueprint did not explicitly cover.
+
+```
+clicked [data-agent-id="button-add-expense"]
+filled [data-agent-id="input-merchant"]
+filled [data-agent-id="input-amount"]
+clicked [data-agent-id="select-category"]
+clicked div[role='option']:has-text('Facilities')
+clicked [data-agent-id="button-project-combobox-trigger"]
+filled [data-agent-id="input-project-search"]
+clicked [data-agent-id="button-project-create"]
+clicked [data-agent-id="button-add-expense"]
+done
+```
+
+Result: **Fail without blueprint. Pass with blueprint. Same app, same task,
+same agent.**
+
+### What this shows
+
+The blueprint's value is not just enabling tasks that were previously
+impossible — it is making outcomes consistent and predictable. Without a
+blueprint, agents guess at selectors and succeed or fail by luck depending on
+how the app happens to be built. With a blueprint, they follow a declared path
+and handle unexpected situations using the orientation the blueprint provides.
+
+It also confirms that a blueprint is only as good as the stability of the
+selectors it references. A blueprint pointing at dynamically generated IDs will
+fail as consistently as no blueprint at all. Use `data-agent-id` attributes on
+elements the blueprint references — they are stable, purpose-built agent hooks
+that survive visual refactors and component library updates.
+
+### Note on the informal blueprint problem
+
+Before Blueprint Protocol was introduced to the test, another agent working on
+the same problem independently wrote out the app's flows and selectors as a
+one-off prompt — essentially inventing an ad-hoc blueprint from scratch to get
+the agents through. The informal blueprint always exists somewhere: in a prompt,
+a comment, a custom fixture. Blueprint Protocol makes it formal, stable,
+permanent, and discoverable.
