@@ -86,6 +86,9 @@ A blueprint-ready app can be picked up by any tool that reads the standard — d
 **The barrier is low. The upside compounds.**  
 A 20-line file written today makes your app more valuable to every AI agent and blueprint-aware tool that exists now and in the future.
 
+**Your blueprint keeps your app honest.**  
+The same document agents use to navigate your app can verify that everything else you say about it stays accurate. Feed your blueprint to an AI alongside your homepage, FAQ, or feature descriptions and ask: does the app match what you're claiming? A blueprint kept current becomes a single source of truth for your entire public-facing representation — not just for agents, but for your own consistency.
+
 ---
 
 ## Specification

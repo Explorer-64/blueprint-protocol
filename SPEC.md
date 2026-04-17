@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v2.0.0
+# Blueprint Protocol — Specification v2.1.0
 
 **Status:** Draft  
 **Published:** 2026-04-13  
@@ -41,6 +41,7 @@ Blueprint: https://yourapp.com/blueprint.txt
 ```
 # BLUEPRINT header
 ## IDENTITY block
+## SUMMARY block (optional — for discovery and recommendation)
 ## AUTH block (or reference)
 ## MCP block (if MCP server exists)
 ## ACCESS block
@@ -78,7 +79,47 @@ Do not use slash-separated subcategories. One value only.
 
 ---
 
-## 6. AUTH Block
+## 6. SUMMARY Block
+
+The `SUMMARY` block is optional. It provides a concise overview of the app for
+agents that need to understand what an app does without parsing every capability
+in detail.
+
+Crawlers, recommendation engines, and discovery tools read this block and stop.
+Agent runtimes executing tasks read the full `CAPABILITIES` blocks. For large
+apps with many capabilities, `SUMMARY` is the difference between a blueprint
+that answers a discovery agent immediately and one that requires parsing hundreds
+of lines before forming a useful response.
+
+```
+## SUMMARY
+tagline: <one sentence — what this app does for the user>
+audience: <who this app is built for>
+capabilities:
+  - <capability-id>: <one line — what it does>
+  - <capability-id>: <one line — what it does>
+  - <capability-id>: <one line — what it does>
+```
+
+List only the top 3–7 capabilities a user would reach for first. This is not an
+exhaustive list — the full `CAPABILITIES` blocks cover everything. `SUMMARY` is
+a curated front door for agents that want to understand before they act.
+
+Example:
+
+```
+## SUMMARY
+tagline: Snap a receipt and your expense is logged. No forms, no deadlines.
+audience: Freelancers, solopreneurs, and neurodivergent users who struggle with traditional expense apps.
+capabilities:
+  - snap-receipt: Photograph a receipt and AI extracts and saves the expense automatically
+  - manual-entry: Add an expense by filling a short form
+  - export-csv: Download all expenses as a CSV for tax or accounting use
+```
+
+---
+
+## 7. AUTH Block
 
 Declare authentication once. Apps sharing an auth provider (e.g., a suite on shared Firebase Auth) should declare auth in a central blueprint and reference it.
 
@@ -101,7 +142,7 @@ Using a reference means a change to shared auth requires updating one file, not 
 
 ---
 
-## 7. MCP Block
+## 8. MCP Block
 
 If an MCP server exists for this app, declare it here so agents know how to
 connect before attempting to call any tool. This block is optional — omit it
@@ -137,7 +178,7 @@ tool: <tool-name>
 
 ---
 
-## 8. ACCESS Block
+## 9. ACCESS Block
 
 The `ACCESS` block declares the preferred hierarchy for agent interaction. Agents MUST attempt methods in order and stop at the first one available.
 
@@ -160,7 +201,7 @@ If a capability only supports one method, only that method appears in its defini
 
 ---
 
-## 9. CAPABILITIES Block
+## 10. CAPABILITIES Block
 
 Each capability is declared independently. The capability describes **what** the app can do; the invocation blocks describe **how** to do it via each access method.
 
@@ -202,7 +243,7 @@ Only include the invocation blocks that actually exist. A capability with only a
 
 ---
 
-## 10. UI Step Actions
+## 11. UI Step Actions
 
 UI steps are a last resort. When UI steps are required, use `data-agent-id` attributes — not `id`, `class`, or CSS selectors.
 
@@ -248,7 +289,7 @@ VERIFY http_status == 200
 
 ---
 
-## 11. Variables
+## 12. Variables
 
 Variables are written `<<variable-name>>` and resolved at runtime from user context, prior conversation, or by prompting the user.
 
@@ -290,7 +331,7 @@ App developers rendering dynamic `data-agent-id` values in HTML MUST apply the s
 
 ---
 
-## 12. Scope Values
+## 13. Scope Values
 
 Scope declares the highest-risk operation a capability performs. Agents MUST NOT exceed declared scope. Agents MUST prompt the user for confirmation before executing `financial-transaction` or `destructive` scope.
 
@@ -305,7 +346,7 @@ Scope declares the highest-risk operation a capability performs. Agents MUST NOT
 
 ---
 
-## 13. Relationship to Other Standards
+## 14. Relationship to Other Standards
 
 | Standard | Purpose | Blueprint's role |
 |----------|---------|-----------------|
@@ -317,7 +358,7 @@ Scope declares the highest-risk operation a capability performs. Agents MUST NOT
 
 ---
 
-## 14. Versioning
+## 15. Versioning
 
 Blueprint follows [Semantic Versioning](https://semver.org/).
 
