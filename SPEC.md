@@ -2,7 +2,7 @@
 
 **Status:** Draft  
 **Published:** 2026-04-13  
-**Author:** Blueprint Protocol Contributors
+**Author:** Abe Reimer
 
 ---
 
