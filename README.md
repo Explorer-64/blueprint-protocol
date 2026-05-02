@@ -129,16 +129,30 @@ If the UI has a loading state, there must be a `WAIT` step. Agents and any tool 
 
 ---
 
+## Why This Exists
+
+I didn't build this as a software architect. I built it as a manufacturer who manages a business with 13 different apps, a shop floor full of wood cable reels, and a life that doesn't have room for broken AI automations.
+
+In manufacturing, we use standardized pallets because if the notches don't line up, the forklift can't move the product. Blueprint Protocol is that standardized pallet for the AI era.
+
+I'm a vibe coder — I use AI to build and deploy because I'd rather spend my time solving real-world friction than getting lost in complex code. I noticed that even the smartest AI agents hallucinate when they look at a website. They guess where to click, they fail, and they waste time.
+
+This protocol exists to stop the guessing. It's a 10-minute text file designed for the person who wants their tools to work the first time, every time. No enterprise bloat, no complex servers — just a map so the agent can get the job done while you focus on your actual work.
+
+— Abe Reimer
+
+---
+
 ## Status
 
-**Version: 2.0.0 — Draft**
+**Version: 2.1.0 — Draft**
 
-This is an open, unowned standard. Use it, fork it, extend it.  
+This is an open standard. Use it, fork it, extend it.  
 If you build something with it, open a PR to add your example.
 
 ---
 
-*Blueprint Protocol is an open standard. No one owns it. Everyone benefits from it.*
+*Blueprint Protocol is an open standard. Licensed under MIT.*
 
 ---
 
