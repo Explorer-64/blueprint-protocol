@@ -128,6 +128,14 @@ The result suggests the three-surface pattern meaningfully increases fetch
 likelihood for reasoning models, though a single test is not conclusive. Further
 real-world data is needed.
 
+**A note on subsequent assessments:** Following this result, blueprint compliance
+was added as an explicit criterion in StackLaunch's assessment suite. That means
+later assessments actively prompt for blueprint detection — which is a different
+thing from the April 2026 result, where Gemini surfaced it without being asked.
+The validation claim in this document refers specifically to that unprompted
+detection. Prompted assessments that followed are a natural consequence of the
+original finding, not independent validation of it.
+
 ---
 
 ## Agent Interaction Testing
