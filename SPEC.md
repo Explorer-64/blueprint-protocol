@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v2.1.0
+# Blueprint Protocol — Specification v2.2.0
 
 **Status:** Draft  
 **Published:** 2026-04-13  
@@ -33,6 +33,19 @@ Reference it from your `llms.txt` so AI crawlers already reading that file can f
 ```
 Blueprint: https://yourapp.com/blueprint.txt
 ```
+
+### 2.1 Discovery Surfaces
+
+Recommended discovery surfaces (SHOULD, not MUST):
+
+| Surface | Format |
+|---------|--------|
+| `llms.txt` | `Blueprint: https://yourapp.com/blueprint.txt` |
+| HTML `<head>` | `<link rel="blueprint" href="/blueprint.txt" type="text/plain" />` |
+| `robots.txt` | First line: `# Blueprint: https://yourapp.com/blueprint.txt` |
+
+The three-surface pattern maximises likelihood that crawlers and agents find the
+file. Only the root URL is strictly required for a valid deployment.
 
 ---
 
@@ -131,6 +144,19 @@ provider: <firebase | auth0 | custom | none>
 method: <email | oauth | api-key | session>
 ```
 
+Or **plural modes** when the UI supports multiple sign-in surfaces (comma-separated):
+
+```
+## AUTH
+provider: firebase
+methods: email-password, oauth-google
+```
+
+Agents MUST interpret `methods` as an unordered set of allowed sign-in surfaces.
+Absent `methods`, derive behaviour from single `method` only.
+
+Valid `method`/`methods` tokens: `none`, `email`, `email-password`, `oauth`, `oauth-google`, `oauth-github`, `oauth-microsoft`, `api-key`, `session`, `magic-link`.
+
 ### Reference to a shared auth spec:
 
 ```
@@ -139,6 +165,11 @@ ref: https://yourapp.com/blueprint.txt#auth
 ```
 
 Using a reference means a change to shared auth requires updating one file, not every app blueprint in the suite.
+
+Fragment resolution: `#auth` designates the textual span from the line matching
+`^\s*##\s+AUTH\s*$` inclusive, until the next line matching `^\s*##\s+[A-Za-z]`
+(exclusive) or EOF. Other fragments MUST be ignored unless a future minor version
+assigns meaning.
 
 ---
 
@@ -241,6 +272,9 @@ steps:
 
 Only include the invocation blocks that actually exist. A capability with only an API has no MCP or UI block.
 
+`<capability-id>` MUST match `^[a-z0-9]+(-[a-z0-9]+)*$` (lowercase kebab-case).
+IDs MUST be unique within the document.
+
 ---
 
 ## 11. UI Step Actions
@@ -325,9 +359,15 @@ Examples:
 | `Drink Water` | `drink-water` |
 | `Drink water (8oz)` | `drink-water-8oz` |
 | `Morning Run 5km` | `morning-run-5km` |
-| `読書` | `(strip — result is empty, do not use dynamic selectors for non-latin text)` |
+| `読書` | `(strip — empty result, see below)` |
 
 App developers rendering dynamic `data-agent-id` values in HTML MUST apply the same normalization to ensure selectors match at runtime. Both sides of the contract must normalize identically or the selector will silently fail.
+
+If normalisation produces an empty segment, agents MUST NOT attempt to construct
+or match the selector. App authors MUST instead emit a stable opaque id
+(e.g. UUID or numeric row id) in the HTML attribute and reference that literal
+value in the blueprint step. Silent failure from an empty dynamic selector is
+not acceptable.
 
 ---
 
@@ -358,7 +398,18 @@ Scope declares the highest-risk operation a capability performs. Agents MUST NOT
 
 ---
 
-## 15. Versioning
+## 15. Parsing and Error Handling
+
+- Parsers SHOULD recover block-by-block; a malformed capability MUST NOT
+  invalidate unrelated capabilities in the same document.
+- Unknown `VERIFY` predicates SHOULD fail closed: abort the flow and surface
+  the unrecognised condition to the user rather than silently continuing.
+- On major version incompatibility (agent's supported major < document major),
+  agents MUST warn the user before executing any steps.
+
+---
+
+## 16. Versioning
 
 Blueprint follows [Semantic Versioning](https://semver.org/).
 
