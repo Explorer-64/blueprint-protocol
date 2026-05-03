@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v2.3.0
+# Blueprint Protocol — Specification v2.4.0
 
 **Status:** Draft  
 **Published:** 2026-04-13  
@@ -158,8 +158,12 @@ blueprints:
 - Each `url` MUST point to a valid blueprint file conforming to this spec.
 - Each sub-blueprint MUST include its own `## IDENTITY` and `## AUTH` block
   (or an `## AUTH ref:` pointing back to the root).
+- Each sub-blueprint MUST include its own `## ACCESS` block declaring the
+  methods available for its capabilities.
 - The root blueprint MUST NOT declare `## CAPABILITIES` blocks if `## INDEX`
   is present — capabilities live in the sub-blueprints only.
+- The root blueprint SHOULD NOT declare `## ACCESS` when `## INDEX` is present
+  — access is declared per sub-blueprint.
 - Agents SHOULD read the root `## SUMMARY` to understand intent, then fetch
   only the sub-blueprint whose `scope` matches the requested task.
 
@@ -278,6 +282,29 @@ Only list methods that actually exist. An app with no backend API omits `fallbac
 
 If a capability only supports one method, only that method appears in its definition. An agent encountering a missing method skips to the next available fallback.
 
+### Tier evaluation rules
+
+Agents MUST evaluate the ACCESS hierarchy in order and stop at the first available method:
+
+1. If `preferred: mcp` is declared and an MCP server is reachable, use MCP. Do not attempt API or UI.
+2. If `fallback: api` is declared and no MCP is available or reachable, use the API endpoint.
+3. If `last-resort: ui` is declared and no programmatic interface is available, use UI automation.
+4. If a declared method is missing from a specific capability block, skip to the next tier for that capability only.
+
+**UI-only apps** (no API, no MCP):
+```
+## ACCESS
+last-resort: ui
+```
+
+**API-only apps** (no MCP, no UI automation):
+```
+## ACCESS
+preferred: api
+```
+
+Do not declare `preferred: mcp` or `fallback: api` as a placeholder. If the method does not exist, omit it.
+
 ---
 
 ## 11. CAPABILITIES Block
@@ -362,12 +389,15 @@ CLICK [data-agent-id="generate-button"]
 
 ```
 VERIFY url == "/path"
+VERIFY url contains "/path"
 VERIFY selector_exists [data-agent-id="x"]
 VERIFY selector_not_exists [data-agent-id="x"]
 VERIFY file_type == ".zip"
 VERIFY text_contains [data-agent-id="x"] "string"
 VERIFY http_status == 200
 ```
+
+`url contains` is preferred over `url ==` for SPAs where query strings or hash fragments may be appended to the path.
 
 ---
 
