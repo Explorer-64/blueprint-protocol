@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v2.2.0
+# Blueprint Protocol — Specification v2.3.0
 
 **Status:** Draft  
 **Published:** 2026-04-13  
@@ -55,6 +55,7 @@ file. Only the root URL is strictly required for a valid deployment.
 # BLUEPRINT header
 ## IDENTITY block
 ## SUMMARY block (optional — for discovery and recommendation)
+## INDEX block (optional — for large apps with multiple sub-blueprints)
 ## AUTH block (or reference)
 ## MCP block (if MCP server exists)
 ## ACCESS block
@@ -132,7 +133,54 @@ capabilities:
 
 ---
 
-## 7. AUTH Block
+## 7. INDEX Block
+
+The `INDEX` block is optional. It is designed for large apps where a single
+`blueprint.txt` would become unwieldy. Instead of declaring all capabilities
+inline, the root blueprint declares an index of sub-blueprints — one per
+section, feature area, or bounded context of the app.
+
+This follows the same pattern as an XML sitemap index: one root file that points
+to sub-files, each covering a scoped portion of the whole.
+
+```
+## INDEX
+blueprints:
+  - url: https://yourapp.com/blueprints/auth.txt
+    scope: <one line — what this sub-blueprint covers>
+  - url: https://yourapp.com/blueprints/billing.txt
+    scope: <one line — what this sub-blueprint covers>
+  - url: https://yourapp.com/blueprints/dashboard.txt
+    scope: <one line — what this sub-blueprint covers>
+```
+
+**Rules:**
+- Each `url` MUST point to a valid blueprint file conforming to this spec.
+- Each sub-blueprint MUST include its own `## IDENTITY` and `## AUTH` block
+  (or an `## AUTH ref:` pointing back to the root).
+- The root blueprint MUST NOT declare `## CAPABILITIES` blocks if `## INDEX`
+  is present — capabilities live in the sub-blueprints only.
+- Agents SHOULD read the root `## SUMMARY` to understand intent, then fetch
+  only the sub-blueprint whose `scope` matches the requested task.
+
+Example — a large project management app:
+
+```
+## INDEX
+blueprints:
+  - url: https://yourapp.com/blueprints/projects.txt
+    scope: creating, editing, and archiving projects
+  - url: https://yourapp.com/blueprints/tasks.txt
+    scope: adding, assigning, and completing tasks
+  - url: https://yourapp.com/blueprints/billing.txt
+    scope: subscription management and invoices
+  - url: https://yourapp.com/blueprints/account.txt
+    scope: user profile, settings, and notifications
+```
+
+---
+
+## 8. AUTH Block
 
 Declare authentication once. Apps sharing an auth provider (e.g., a suite on shared Firebase Auth) should declare auth in a central blueprint and reference it.
 
@@ -173,7 +221,7 @@ assigns meaning.
 
 ---
 
-## 8. MCP Block
+## 9. MCP Block
 
 If an MCP server exists for this app, declare it here so agents know how to
 connect before attempting to call any tool. This block is optional — omit it
@@ -209,7 +257,7 @@ tool: <tool-name>
 
 ---
 
-## 9. ACCESS Block
+## 10. ACCESS Block
 
 The `ACCESS` block declares the preferred hierarchy for agent interaction. Agents MUST attempt methods in order and stop at the first one available.
 
@@ -232,7 +280,7 @@ If a capability only supports one method, only that method appears in its defini
 
 ---
 
-## 10. CAPABILITIES Block
+## 11. CAPABILITIES Block
 
 Each capability is declared independently. The capability describes **what** the app can do; the invocation blocks describe **how** to do it via each access method.
 
@@ -277,7 +325,7 @@ IDs MUST be unique within the document.
 
 ---
 
-## 11. UI Step Actions
+## 12. UI Step Actions
 
 UI steps are a last resort. When UI steps are required, use `data-agent-id` attributes — not `id`, `class`, or CSS selectors.
 
@@ -323,7 +371,7 @@ VERIFY http_status == 200
 
 ---
 
-## 12. Variables
+## 13. Variables
 
 Variables are written `<<variable-name>>` and resolved at runtime from user context, prior conversation, or by prompting the user.
 
@@ -371,7 +419,7 @@ not acceptable.
 
 ---
 
-## 13. Scope Values
+## 14. Scope Values
 
 Scope declares the highest-risk operation a capability performs. Agents MUST NOT exceed declared scope. Agents MUST prompt the user for confirmation before executing `financial-transaction` or `destructive` scope.
 
@@ -386,7 +434,7 @@ Scope declares the highest-risk operation a capability performs. Agents MUST NOT
 
 ---
 
-## 14. Relationship to Other Standards
+## 15. Relationship to Other Standards
 
 | Standard | Purpose | Blueprint's role |
 |----------|---------|-----------------|
@@ -398,7 +446,7 @@ Scope declares the highest-risk operation a capability performs. Agents MUST NOT
 
 ---
 
-## 15. Parsing and Error Handling
+## 16. Parsing and Error Handling
 
 - Parsers SHOULD recover block-by-block; a malformed capability MUST NOT
   invalidate unrelated capabilities in the same document.
@@ -409,7 +457,7 @@ Scope declares the highest-risk operation a capability performs. Agents MUST NOT
 
 ---
 
-## 16. Versioning
+## 17. Versioning
 
 Blueprint follows [Semantic Versioning](https://semver.org/).
 
