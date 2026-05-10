@@ -139,7 +139,7 @@ I'm a vibe coder — I use AI to build and deploy because I'd rather spend my ti
 
 This protocol exists to stop the guessing. It's a 10-minute text file designed for the person who wants their tools to work the first time, every time. No enterprise bloat, no complex servers — just a map so the agent can get the job done while you focus on your actual work.
 
-— Abe Reimer
+— Jill Mercer
 
 ---
 
