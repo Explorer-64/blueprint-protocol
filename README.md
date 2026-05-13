@@ -6,13 +6,15 @@
 
 ## The Problem
 
+There are tens of thousands of MCP servers. An agent connecting to all of them burns its entire context window on tool definitions before it reads a single user message. Agents don't know which servers are relevant, so they connect to everything — and drown.
+
+Even when an agent connects to the right server, it still has to guess. It hallucinate button IDs, clicks the wrong things, calls the wrong tools, and fails silently. The result is frustrated users, broken automations, and AI assistants that look incompetent — even when the underlying model is excellent.
+
 `llms.txt` tells AI what your site *is*.  
 `sitemap.xml` tells crawlers what pages *exist*.  
 `robots.txt` tells bots where they *can't go*.
 
-But nothing tells an AI agent how to actually **do** something inside your app.
-
-So agents guess. They hallucinate button IDs, click the wrong things, and fail silently. The result is frustrated users, broken automations, and AI assistants that look incompetent — even when the underlying model is excellent.
+Nothing tells an AI agent which server to connect to, which tool to call, or how to actually **do** something inside your app.
 
 ---
 
@@ -21,6 +23,8 @@ So agents guess. They hallucinate button IDs, click the wrong things, and fail s
 A `blueprint.txt` file at the root of your web app.
 
 One plain text file. No tooling required. Any developer can write one in under 10 minutes.
+
+An agent reads it and knows: is this app relevant to my task? If yes — which MCP tool to call, which API endpoint to hit, or exactly how to navigate the UI. It arrives with intent, not guesswork. It connects to your server once, calls the right tool directly, and stops burning context on everything else.
 
 ---
 
