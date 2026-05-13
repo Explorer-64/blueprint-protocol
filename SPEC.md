@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v2.4.0
+# Blueprint Protocol — Specification v2.5.0
 
 **Status:** Draft  
 **Published:** 2026-04-13  
@@ -59,6 +59,7 @@ file. Only the root URL is strictly required for a valid deployment.
 ## AUTH block (or reference)
 ## MCP block (if MCP server exists)
 ## ACCESS block
+## TIMING block (optional — real-world wait maximums)
 ## CAPABILITIES block (one per capability)
 ```
 
@@ -384,6 +385,7 @@ CLICK [data-agent-id="generate-button"]
 | Upload | `UPLOAD [data-agent-id="x"] <<file-var>>` | File input |
 | Assert auth | `ASSERT-AUTH` | Agent must be authenticated before this step |
 | Verify | `VERIFY <condition>` | Flow fails if condition is false |
+| Complete | `COMPLETE <description>` | Hand control to an external flow the agent cannot step through (e.g. Stripe checkout, Google OAuth popup, native OS dialog). The description tells the agent what the user must do. Flow resumes at the next step once the external interaction is finished. |
 
 ### VERIFY Conditions
 
@@ -394,10 +396,16 @@ VERIFY selector_exists [data-agent-id="x"]
 VERIFY selector_not_exists [data-agent-id="x"]
 VERIFY file_type == ".zip"
 VERIFY text_contains [data-agent-id="x"] "string"
+VERIFY value starts_with "prefix"
+VERIFY attribute_changed [data-agent-id="x"] "src"
 VERIFY http_status == 200
 ```
 
 `url contains` is preferred over `url ==` for SPAs where query strings or hash fragments may be appended to the path.
+
+`value starts_with` checks that the text content or value of the most recently interacted element begins with the given string — useful for verifying generated keys or tokens.
+
+`attribute_changed` checks that a named attribute on an element has a different value than it did when the step began — useful for confirming an image or resource has been replaced.
 
 ---
 
@@ -449,7 +457,32 @@ not acceptable.
 
 ---
 
-## 14. Scope Values
+## 14. TIMING Block
+
+The `## TIMING` block is optional. It declares real-world observed wait maximums
+for operations that have variable execution times — AI generation, file processing,
+external API calls. Agents use these values to set appropriate `WAIT` maximums
+rather than guessing or using fixed values.
+
+```
+## TIMING
+# Format: <operation-label>: <observed-range> — use max: <N>s
+ai-image-generation: 15–45s — use max: 60s
+ai-image-refinement: 20–90s — use max: 120s
+file-processing: 5–15s — use max: 30s
+file-upload: 2–5s — use max: 15s
+```
+
+Values MUST reflect real-world observations, not aspirational targets. Include
+the observed range as a comment so implementers understand the variability.
+Agents MUST use the declared maximum in `WAIT` steps for the corresponding
+operation type.
+
+Place `## TIMING` after `## ACCESS` and before `## CAPABILITIES`.
+
+---
+
+## 15. Scope Values
 
 Scope declares the highest-risk operation a capability performs. Agents MUST NOT exceed declared scope. Agents MUST prompt the user for confirmation before executing `financial-transaction` or `destructive` scope.
 
@@ -458,13 +491,16 @@ Scope declares the highest-risk operation a capability performs. Agents MUST NOT
 | `read-only` | Navigation and observation only |
 | `form-submit` | Fill and submit forms |
 | `file-download` | Trigger a file download |
+| `edit` | Modify existing content — crop, draw, annotate, refine. Does not submit a form or download a file. |
 | `account-modify` | Change account settings or profile |
-| `financial-transaction` | Payment, billing, or subscription |
+| `financial-transaction` | Payment, billing, subscription, or any in-app purchase |
 | `destructive` | Delete or permanently modify data |
+
+Use `financial-transaction` for any capability that initiates a payment or purchase — including in-app credit purchases. Do not invent scope values outside this list.
 
 ---
 
-## 15. Relationship to Other Standards
+## 16. Relationship to Other Standards
 
 | Standard | Purpose | Blueprint's role |
 |----------|---------|-----------------|
@@ -476,7 +512,7 @@ Scope declares the highest-risk operation a capability performs. Agents MUST NOT
 
 ---
 
-## 16. Parsing and Error Handling
+## 17. Parsing and Error Handling
 
 - Parsers SHOULD recover block-by-block; a malformed capability MUST NOT
   invalidate unrelated capabilities in the same document.
@@ -487,7 +523,7 @@ Scope declares the highest-risk operation a capability performs. Agents MUST NOT
 
 ---
 
-## 17. Versioning
+## 18. Versioning
 
 Blueprint follows [Semantic Versioning](https://semver.org/).
 
