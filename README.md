@@ -30,7 +30,7 @@ This is all you need to get started:
 
 ```
 # BLUEPRINT: Habit Tracker
-# Version: 2.0.0
+# Version: 2.5.0
 # URL: https://yourhabittracker.app
 
 ## IDENTITY
@@ -145,7 +145,7 @@ This protocol exists to stop the guessing. It's a 10-minute text file designed f
 
 ## Status
 
-**Version: 2.1.0 — Draft**
+**Version: 2.5.0 — Draft**
 
 This is an open standard. Use it, fork it, extend it.  
 If you build something with it, open a PR to add your example.
