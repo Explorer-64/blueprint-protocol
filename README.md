@@ -89,6 +89,9 @@ A 20-line file written today makes your app more valuable to every AI agent and 
 **Your blueprint keeps your app honest.**  
 The same document agents use to navigate your app can verify that everything else you say about it stays accurate. Feed your blueprint to an AI alongside your homepage, FAQ, or feature descriptions and ask: does the app match what you're claiming? A blueprint kept current becomes a single source of truth for your entire public-facing representation — not just for agents, but for your own consistency.
 
+**If you have an MCP server, a blueprint solves the discovery problem.**  
+There are tens of thousands of MCP servers. An agent connecting to all of them burns its entire context window on tool definitions before it reads a single user message. A blueprint lets an agent read one plain text file and know whether your server is relevant to the task, which tool to call, and what inputs it needs — before connecting. The agent arrives with intent, not speculatively. Blueprint Protocol treats MCP as the preferred access method: declare your server in `## MCP`, map each capability to its tool name, and agents that support MCP will use it automatically over API or UI fallbacks.
+
 ---
 
 ## Specification
