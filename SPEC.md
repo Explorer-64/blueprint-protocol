@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v2.5.0
+# Blueprint Protocol — Specification v3.0.0
 
 **Status:** Draft  
 **Published:** 2026-04-13  
@@ -8,15 +8,17 @@
 
 ## 1. Overview
 
-A `blueprint.txt` file placed at the root of a web application (e.g., `https://yourapp.com/blueprint.txt`) tells AI agents what the app can do and how to invoke it — in priority order.
+A `blueprint.txt` file placed at the root of a web application (e.g., `https://yourapp.com/blueprint.txt`) tells AI agents what the app can do and how to invoke it.
 
-Blueprint answers three questions:
+Blueprint is structured for agents first. The information an agent needs to make a decision is at the top. The information humans and crawlers need is below it.
 
-1. **What can this app do?** → `CAPABILITIES`
-2. **How should an agent interact with it?** → `ACCESS` hierarchy
-3. **What does it need first?** → `AUTH`
+An agent evaluating a shortlist of candidate apps reads the header to check for MCP support, reads the CAPABILITIES index to match against the task, fetches only the relevant capability file, and executes. It never needs to read the rest.
 
-An agent reads the capability list to understand intent, then uses the access hierarchy to pick the best available method: MCP first, API second, UI as a last resort.
+Blueprint answers three questions in order of agent priority:
+
+1. **Does this app have MCP?** → Header flag `[MCP]`
+2. **Does it do what I need?** → `CAPABILITIES` index
+3. **How do I use it?** → Individual capability file
 
 ---
 
@@ -52,16 +54,23 @@ file. Only the root URL is strictly required for a valid deployment.
 ## 3. Document Structure
 
 ```
-# BLUEPRINT header
+# BLUEPRINT header (includes [MCP] flag if server exists)
+## CAPABILITIES block — agent reads this first
+   Format A: inline declarations (small apps)
+   Format B: index with linked capability files (larger apps)
 ## IDENTITY block
-## SUMMARY block (optional — for discovery and recommendation)
-## INDEX block (optional — for large apps with multiple sub-blueprints)
+## SUMMARY block (optional — for humans and crawlers)
 ## AUTH block (or reference)
-## MCP block (if MCP server exists)
+## MCP block (full server declaration)
 ## ACCESS block
 ## TIMING block (optional — real-world wait maximums)
-## CAPABILITIES block (one per capability)
 ```
+
+Blocks are ordered by agent priority. An agent that finds a capability match
+in the CAPABILITIES block can fetch the relevant file and stop — it never needs
+to read IDENTITY, SUMMARY, AUTH, or MCP from the root blueprint. Those blocks
+exist for human developers, crawlers, and agents that need to authenticate or
+install the MCP server.
 
 ---
 
@@ -75,6 +84,18 @@ file. Only the root URL is strictly required for a valid deployment.
 ```
 
 All four fields are required.
+
+If the app has an MCP server, append `[MCP]` to the app name on the first line:
+
+```
+# BLUEPRINT: Imagcon [MCP]
+# Version: 3.0.0
+# URL: https://imagcon.app
+# Updated: 2026-05-15
+```
+
+The `[MCP]` flag lets an agent confirm MCP availability from line one — before
+reading any other block. Apps without an MCP server omit the flag.
 
 ---
 
@@ -134,58 +155,7 @@ capabilities:
 
 ---
 
-## 7. INDEX Block
-
-The `INDEX` block is optional. It is designed for large apps where a single
-`blueprint.txt` would become unwieldy. Instead of declaring all capabilities
-inline, the root blueprint declares an index of sub-blueprints — one per
-section, feature area, or bounded context of the app.
-
-This follows the same pattern as an XML sitemap index: one root file that points
-to sub-files, each covering a scoped portion of the whole.
-
-```
-## INDEX
-blueprints:
-  - url: https://yourapp.com/blueprints/auth.txt
-    scope: <one line — what this sub-blueprint covers>
-  - url: https://yourapp.com/blueprints/billing.txt
-    scope: <one line — what this sub-blueprint covers>
-  - url: https://yourapp.com/blueprints/dashboard.txt
-    scope: <one line — what this sub-blueprint covers>
-```
-
-**Rules:**
-- Each `url` MUST point to a valid blueprint file conforming to this spec.
-- Each sub-blueprint MUST include its own `## IDENTITY` and `## AUTH` block
-  (or an `## AUTH ref:` pointing back to the root).
-- Each sub-blueprint MUST include its own `## ACCESS` block declaring the
-  methods available for its capabilities.
-- The root blueprint MUST NOT declare `## CAPABILITIES` blocks if `## INDEX`
-  is present — capabilities live in the sub-blueprints only.
-- The root blueprint SHOULD NOT declare `## ACCESS` when `## INDEX` is present
-  — access is declared per sub-blueprint.
-- Agents SHOULD read the root `## SUMMARY` to understand intent, then fetch
-  only the sub-blueprint whose `scope` matches the requested task.
-
-Example — a large project management app:
-
-```
-## INDEX
-blueprints:
-  - url: https://yourapp.com/blueprints/projects.txt
-    scope: creating, editing, and archiving projects
-  - url: https://yourapp.com/blueprints/tasks.txt
-    scope: adding, assigning, and completing tasks
-  - url: https://yourapp.com/blueprints/billing.txt
-    scope: subscription management and invoices
-  - url: https://yourapp.com/blueprints/account.txt
-    scope: user profile, settings, and notifications
-```
-
----
-
-## 8. AUTH Block
+## 7. AUTH Block
 
 Declare authentication once. Apps sharing an auth provider (e.g., a suite on shared Firebase Auth) should declare auth in a central blueprint and reference it.
 
@@ -226,7 +196,7 @@ assigns meaning.
 
 ---
 
-## 9. MCP Block
+## 8. MCP Block
 
 If an MCP server exists for this app, declare it here so agents know how to
 connect before attempting to call any tool. This block is optional — omit it
@@ -262,7 +232,7 @@ tool: <tool-name>
 
 ---
 
-## 10. ACCESS Block
+## 9. ACCESS Block
 
 The `ACCESS` block declares the preferred hierarchy for agent interaction. Agents MUST attempt methods in order and stop at the first one available.
 
@@ -308,9 +278,21 @@ Do not declare `preferred: mcp` or `fallback: api` as a placeholder. If the meth
 
 ---
 
-## 11. CAPABILITIES Block
+## 10. CAPABILITIES Block
 
-Each capability is declared independently. The capability describes **what** the app can do; the invocation blocks describe **how** to do it via each access method.
+Two formats are valid. Choose based on app size. Both produce the same outcome
+for agents — the difference is whether capabilities live inline or in separate
+fetchable files.
+
+---
+
+### Format A — Inline (small apps)
+
+All capabilities declared directly in `blueprint.txt`. Suitable for apps with
+fewer than ~10 capabilities. This is the 10-minute version.
+
+Each capability is declared independently. The capability describes **what** the
+app can do; the invocation blocks describe **how** to do it.
 
 ```
 ## CAPABILITY: <capability-id>
@@ -346,14 +328,76 @@ steps:
   5. VERIFY <condition>
 ```
 
-Only include the invocation blocks that actually exist. A capability with only an API has no MCP or UI block.
+Only include the invocation blocks that actually exist. A capability with only
+an API has no MCP or UI block.
+
+---
+
+### Format B — Index (larger apps)
+
+The root `blueprint.txt` declares a capability index. Each entry points to a
+standalone capability file and declares the intended actor.
+
+```
+## CAPABILITIES
+<capability-id>: <url> | <actor>
+<capability-id>: <url> | <actor>
+```
+
+Example:
+
+```
+## CAPABILITIES
+generate-icon-set: https://imagcon.app/blueprints/generate-icon-set.txt | mcp
+generate-splash-screens: https://imagcon.app/blueprints/generate-splash-screens.txt | mcp
+edit-image: https://imagcon.app/blueprints/edit-image.txt | human-only
+check-credits: https://imagcon.app/blueprints/check-credits.txt | mcp
+purchase-credits: https://imagcon.app/blueprints/purchase-credits.txt | human-only
+browse-inspiration: https://imagcon.app/blueprints/browse-inspiration.txt | ui
+```
+
+#### Actor Values
+
+| Actor | Meaning |
+|-------|---------|
+| `mcp` | Agent invokes via MCP tool — fetch the capability file for tool name and parameters |
+| `ui` | Agent can automate via UI steps — fetch the capability file for step-by-step flow |
+| `human-only` | Agent MUST NOT attempt this capability — intended for human users only |
+
+#### Rules for Format B
+
+- Root blueprint MUST NOT contain inline `## CAPABILITY:` blocks when using
+  Format B
+- Each `url` MUST point to a publicly accessible plain text capability file
+- Each capability file MUST contain exactly one `## CAPABILITY:` block using
+  Format A syntax
+- Capability files do NOT repeat IDENTITY, AUTH, or MCP blocks — those are
+  declared once in the root blueprint and apply to all capabilities
+- Agents MUST NOT fetch or attempt `human-only` capability files during task
+  execution
+- `human-only` capability files MAY exist for human developer reference but
+  agents should treat the actor declaration as a hard stop
+- `<capability-id>` MUST match `^[a-z0-9]+(-[a-z0-9]+)*$` (lowercase kebab-case)
+- IDs MUST be unique across the index
+
+#### Agent behaviour with Format B
+
+1. Read root blueprint — identify SUMMARY, AUTH, MCP, and CAPABILITIES index
+2. Scan index for capabilities matching the task — filter out `human-only` entries
+3. Fetch only the capability file(s) relevant to the task
+4. Execute using the fetched capability's invocation blocks
+
+An agent handling a PWA icon generation task fetches `generate-icon-set.txt`
+only. It never loads `edit-image.txt` or `purchase-credits.txt`.
+
+---
 
 `<capability-id>` MUST match `^[a-z0-9]+(-[a-z0-9]+)*$` (lowercase kebab-case).
 IDs MUST be unique within the document.
 
 ---
 
-## 12. UI Step Actions
+## 11. UI Step Actions
 
 UI steps are a last resort. When UI steps are required, use `data-agent-id` attributes — not `id`, `class`, or CSS selectors.
 
@@ -409,7 +453,7 @@ VERIFY http_status == 200
 
 ---
 
-## 13. Variables
+## 12. Variables
 
 Variables are written `<<variable-name>>` and resolved at runtime from user context, prior conversation, or by prompting the user.
 
@@ -457,7 +501,7 @@ not acceptable.
 
 ---
 
-## 14. TIMING Block
+## 13. TIMING Block
 
 The `## TIMING` block is optional. It declares real-world observed wait maximums
 for operations that have variable execution times — AI generation, file processing,
@@ -482,7 +526,7 @@ Place `## TIMING` after `## ACCESS` and before `## CAPABILITIES`.
 
 ---
 
-## 15. Scope Values
+## 14. Scope Values
 
 Scope declares the highest-risk operation a capability performs. Agents MUST NOT exceed declared scope. Agents MUST prompt the user for confirmation before executing `financial-transaction` or `destructive` scope.
 
@@ -500,7 +544,7 @@ Use `financial-transaction` for any capability that initiates a payment or purch
 
 ---
 
-## 16. Relationship to Other Standards
+## 15. Relationship to Other Standards
 
 | Standard | Purpose | Blueprint's role |
 |----------|---------|-----------------|
@@ -512,7 +556,7 @@ Use `financial-transaction` for any capability that initiates a payment or purch
 
 ---
 
-## 17. Parsing and Error Handling
+## 16. Parsing and Error Handling
 
 - Parsers SHOULD recover block-by-block; a malformed capability MUST NOT
   invalidate unrelated capabilities in the same document.
@@ -523,7 +567,7 @@ Use `financial-transaction` for any capability that initiates a payment or purch
 
 ---
 
-## 18. Versioning
+## 17. Versioning
 
 Blueprint follows [Semantic Versioning](https://semver.org/).
 
