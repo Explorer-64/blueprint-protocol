@@ -30,25 +30,14 @@ An agent reads it and knows: is this app relevant to my task? If yes — which M
 
 ## Minimal Example
 
-This is all you need to get started:
+This is all you need to get started (Format A — small app, everything inline):
 
 ```
 # BLUEPRINT: Habit Tracker
-# Version: 2.5.0
+# Version: 3.0.0
 # URL: https://yourhabittracker.app
 
-## IDENTITY
-name: Habit Tracker
-description: Build and maintain daily habits. Log completions, track streaks, and stay accountable over time.
-category: productivity
-contact: support@yourhabittracker.app
-
-## AUTH
-provider: firebase
-method: email
-
-## ACCESS
-last-resort: ui
+## CAPABILITIES
 
 ## CAPABILITY: log-habit
 description: Mark a habit as complete for today and update the user's streak.
@@ -71,11 +60,24 @@ steps:
   4. CLICK [data-agent-id="habit-<<habit-name>>-complete"]
   5. WAIT [data-agent-id="streak-updated"] (max: 5s)
   6. VERIFY selector_exists [data-agent-id="streak-updated"]
+
+## IDENTITY
+name: Habit Tracker
+description: Build and maintain daily habits. Log completions, track streaks, and stay accountable over time.
+category: productivity
+contact: support@yourhabittracker.app
+
+## AUTH
+provider: firebase
+method: email
+
+## ACCESS
+last-resort: ui
 ```
 
-That's a complete, working blueprint. An AI agent can read that and log a habit without guessing at a single thing.
+That's a complete, working blueprint. An AI agent can read the CAPABILITIES block and log a habit without reading anything else.
 
-**You only add more when you have more.** If you later build an API endpoint, add an `### API` block. If you build an MCP server, add a `## MCP` block. The spec supports all of it — but none of it is required to start.
+**Larger apps use Format B** — an index in the CAPABILITIES block pointing to individual capability files. Agents fetch only the file they need. See [SPEC.md](./SPEC.md) for the full Format B syntax and the [Imagcon example](https://imagcon.app/blueprint.txt) for a live reference implementation.
 
 ---
 
@@ -152,7 +154,7 @@ This protocol exists to stop the guessing. It's a 10-minute text file designed f
 
 ## Status
 
-**Version: 2.5.0 — Draft**
+**Version: 3.0.0 — Draft**
 
 This is an open standard. Use it, fork it, extend it.  
 If you build something with it, open a PR to add your example.
