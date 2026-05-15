@@ -146,6 +146,16 @@ agents through real app interactions. The test app was
 against a real task: add a $345.87 Home Depot expense assigned to a project
 called "Joe's house."
 
+**Important caveat — blueprint injection, not discovery:** In this test the
+blueprint was injected directly into the agent's prompt by the test harness.
+The agent did not discover the blueprint organically by fetching `llms.txt` or
+reading a `<link rel="blueprint">` tag. This test proves that the blueprint's
+*content* is effective — agents perform significantly better when given the
+blueprint. It does not prove that agents will find the blueprint on their own.
+Discovery and content effectiveness are separate claims. The April 2026
+StackApps crawler assessment (above) addresses discovery. This section
+addresses content effectiveness only.
+
 The test was run with and without a blueprint, using Claude as the agent.
 
 ### Without Blueprint
