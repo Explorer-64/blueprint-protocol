@@ -26,6 +26,12 @@ One plain text file. No tooling required. Any developer can write one in under 1
 
 An agent reads it and knows: is this app relevant to my task? If yes — which MCP tool to call, which API endpoint to hit, or exactly how to navigate the UI. It arrives with intent, not guesswork. It connects to your server once, calls the right tool directly, and stops burning context on everything else.
 
+**For MCP specifically, this eliminates a protocol call entirely.**
+
+MCP has two calls: `tools/list` — which returns every tool the server exposes — and `tools/call` — which calls a specific tool by name. Without a blueprint, an agent calls `tools/list` first, reads through all N tool definitions, picks one, then calls it. With a blueprint, the agent already knows the tool name and exact parameters. It calls `tools/call` directly. `tools/list` never happens.
+
+That's not just cheaper discovery. It's the removal of a round trip.
+
 ---
 
 ## Minimal Example
