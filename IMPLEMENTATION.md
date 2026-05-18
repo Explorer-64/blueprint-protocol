@@ -310,3 +310,86 @@ Generate with one AI, verify with another. Ask the second AI to read your
 blueprint against the spec and identify anything declared that cannot be
 verified from the live app. This catches hallucinated routes, wrong scope
 values, and missing capabilities before an agent encounters them in production.
+
+---
+
+## MCP Discovery Test Results
+
+In May 2026, Blueprint Protocol was tested for its effect on MCP server
+discovery overhead. The test was run on StackApps and results are publicly
+inspectable at https://stackapps.app/mcp-blueprint-results.
+
+### Test setup
+
+Five candidate MCP servers were presented to each agent: one correct match
+(Imagcon) and four plausible alternatives (Brand Kit Studio, Image Gen Tools,
+Vector Icon Pack, PWA Toolkit). The task was fixed:
+
+> "Generate a complete set of PWA icons for a recipe app — all required sizes,
+> maskable variants, iOS icons, Android icons, and manifest.json, packaged and
+> ready to deploy."
+
+Each agent was instructed to find the best server using the most efficient
+method available. No agent was told Blueprint Protocol exists. No blueprint
+references appeared in the harness instructions or tool definitions.
+
+**Run A** — stubs with no blueprint signals. Agents read whatever discovery
+files they chose.
+
+**Run B** — stubs with blueprint discovery signals in `robots.txt` and
+`llms.txt`. Blueprint files available at each stub root. Agents discovered
+blueprints organically by following signals in those files — not by injection.
+
+Overhead was scored by resource inspection cost weighted by typical real-world
+document sizes:
+
+| Resource | Points |
+|----------|--------|
+| `robots.txt` | 1 |
+| `blueprint.txt` | 1 |
+| `blueprints/*.txt` | 1 |
+| `sitemap.xml` | 3 |
+| `get_server_tools` | 3 |
+| `llms.txt` | 10 |
+
+Scores are weighted estimates, not exact token counts. All four models
+identified the correct server in both runs.
+
+### Results
+
+| Model | Run A | Run B | Reduction | Notes |
+|-------|-------|-------|-----------|-------|
+| Claude | 58 | 13 | ~78% | Followed blueprint signal in robots.txt |
+| GPT-4o | 58 | 28 | ~54% | Followed blueprint signal in llms.txt |
+| Gemini | 23 | 9 | ~61% | Used sitemap in Run A; followed blueprint signal in Run B, stopped at first match |
+| Grok | 58 | 58 | 0% | Did not follow blueprint signal |
+
+### What the results show
+
+Three of four models reduced discovery overhead significantly by following
+blueprint discovery signals. Each model used a different strategy:
+
+- **Claude** switched from `robots.txt + llms.txt` to `robots.txt + blueprint.txt`
+- **GPT-4o** switched from `robots.txt + llms.txt` to `robots.txt + blueprint.txt`
+- **Gemini** used `robots.txt + sitemap.xml` in Run A (already more efficient
+  than the other models); in Run B it read one `robots.txt`, saw the Blueprint
+  signal, fetched only the matching server's blueprint, and stopped — the most
+  efficient result of any model in any run
+- **Grok** ignored the blueprint signal and used the same strategy in both runs
+
+The 0% result for Grok is a meaningful finding. Not all models respond to the
+same discovery signals. Blueprint Protocol's value depends on agents being
+trained or prompted to recognise `blueprint.txt` as a standard discovery
+surface — the same adoption path that established `robots.txt` and `llms.txt`
+as standards.
+
+### Methodology note
+
+This test measures guided discovery overhead — agents are given a shortlist of
+candidate servers and choose how to evaluate them. It does not measure the
+prior step of how agents build that shortlist (web search, registry lookup,
+etc.). Blueprint Protocol addresses the evaluation step; search and registry
+infrastructure addresses the shortlist step.
+
+Full methodology, raw results, and reproducible test harness:
+https://stackapps.app/mcp-blueprint-results
