@@ -357,12 +357,12 @@ identified the correct server in both runs.
 
 ### Results
 
-| Model | Run A | Run B | Reduction | Notes |
-|-------|-------|-------|-----------|-------|
-| Claude | 58 | 13 | ~78% | Followed blueprint signal in robots.txt |
-| GPT-4o | 58 | 28 | ~54% | Followed blueprint signal in llms.txt |
-| Gemini | 23 | 9 | ~61% | Used sitemap in Run A; followed blueprint signal in Run B, stopped at first match |
-| Grok | 58 | 58 | 0% | Did not follow blueprint signal |
+| Model | Run A | Run B | Reduction | Run A Strategy | Run B Strategy |
+|-------|-------|-------|-----------|----------------|----------------|
+| Claude | 58 | 13 | ~78% | robots + llms | robots + blueprint |
+| GPT-4o | 58 | 28 | ~54% | robots + llms | robots + blueprint |
+| Gemini | 23 | 9 | ~61% | robots + sitemap | robots + blueprint (Imagcon only) |
+| Grok | 58 | 58 | 0% | robots + llms | robots + llms (ignored signal) |
 
 ### What the results show
 
