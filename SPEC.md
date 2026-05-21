@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v3.0.0
+# Blueprint Protocol — Specification v3.1.0
 
 **Status:** Draft  
 **Published:** 2026-04-13  
@@ -61,7 +61,7 @@ file. Only the root URL is strictly required for a valid deployment.
 ## IDENTITY block
 ## SUMMARY block (optional — for humans and crawlers)
 ## AUTH block (or reference)
-## MCP block (full server declaration)
+## MCP block (full server declaration, with optional TRANSPORT and REQUIRED-SECRETS sub-blocks)
 ## ACCESS block
 ## TIMING block (optional — real-world wait maximums)
 ```
@@ -198,32 +198,99 @@ assigns meaning.
 
 ## 8. MCP Block
 
-If an MCP server exists for this app, declare it here so agents know how to
-connect before attempting to call any tool. This block is optional — omit it
-if no MCP server exists.
+If an MCP server exists for this app, declare it here so agents and tools know
+how to connect before attempting to call any tool. This block is optional —
+omit it if no MCP server exists.
 
 ```
 ## MCP
 server: <server-name>
+preferred-transport: <stdio | streamable_http | sse>
 install: <full install command the user or agent runs once>
 auth: <env var name and what it contains>
 ```
 
-Example:
+`preferred-transport` declares which transport the server is optimised for.
+Agents and tools SHOULD attempt this transport first.
+
+### 8.1 TRANSPORT Sub-blocks
+
+For each supported transport, declare a `### TRANSPORT (type)` sub-block with
+the machine-readable launch or connection parameters. This enables tools to
+auto-launch or auto-connect without requiring the user to look up documentation.
+
+**stdio transport:**
+
+```
+### TRANSPORT (stdio)
+command: <runtime — e.g. uv, uvx, npx, node, python3>
+args: ["<arg1>", "<arg2>", ...]
+```
+
+**streamable_http transport:**
+
+```
+### TRANSPORT (streamable_http)
+url: <full URL of the MCP endpoint>
+auth: bearer ${<SECRET_NAME>}
+```
+
+**sse transport:**
+
+```
+### TRANSPORT (sse)
+url: <full URL of the SSE endpoint>
+auth: bearer ${<SECRET_NAME>}
+```
+
+Only declare transports that actually exist. `${VAR}` denotes a secret that
+must be resolved at runtime — declare all required secrets in
+`### REQUIRED-SECRETS`.
+
+### 8.2 REQUIRED-SECRETS Sub-block
+
+Declare every secret the server needs to operate. Tools use this to prompt
+users for credentials before attempting to launch or connect.
+
+```
+### REQUIRED-SECRETS
+- <SECRET_NAME>:
+    description: <what this secret is>
+    obtain-at: <URL where the user can get it>
+    format: <prefix or pattern — e.g. ic_live_*>
+```
+
+### 8.3 Full example
 
 ```
 ## MCP
 server: imagcon-mcp
+preferred-transport: stdio
 install: claude mcp add imagcon -- uvx imagcon-mcp --api-key <<api-key>>
 auth: IMAGCON_API_KEY — user's Imagcon API key from account settings
+
+### TRANSPORT (stdio)
+command: uv
+args: ["run", "imagcon-mcp", "--api-key", "${IMAGCON_API_KEY}"]
+
+### TRANSPORT (streamable_http)
+url: https://mcp.imagcon.app
+auth: bearer ${IMAGCON_API_KEY}
+
+### REQUIRED-SECRETS
+- IMAGCON_API_KEY:
+    description: Your Imagcon API key for MCP and API access
+    obtain-at: https://imagcon.app/api-keys
+    format: ic_live_*
 ```
 
-An agent that reads this block knows:
-- The server name to reference when calling tools
-- The exact command to install it
-- Which credential is required and where to get it
+A tool reading this block can:
+- Pick a transport (stdio or streamable_http)
+- Know exactly how to launch or connect
+- Identify which secrets are needed and where to get them
+- Prompt the user for only the secrets that are missing
 
-Individual capability blocks then reference the tool name only:
+Individual capability blocks reference the tool name only:
 
 ```
 ### MCP
