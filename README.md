@@ -40,7 +40,7 @@ This is all you need to get started (Format A — small app, everything inline):
 
 ```
 # BLUEPRINT: Habit Tracker
-# Version: 3.0.0
+# Version: 3.1.0
 # URL: https://yourhabittracker.app
 
 ## CAPABILITIES
@@ -160,7 +160,7 @@ This protocol exists to stop the guessing. It's a 10-minute text file designed f
 
 ## Status
 
-**Version: 3.0.0 — Draft**
+**Version: 3.1.0 — Draft**
 
 This is an open standard. Use it, fork it, extend it.  
 If you build something with it, open a PR to add your example.
