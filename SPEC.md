@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v3.1.0
+# Blueprint Protocol — Specification v3.1.1
 
 **Status:** Draft  
 **Published:** 2026-04-13  
@@ -24,16 +24,42 @@ Blueprint answers three questions in order of agent priority:
 
 ## 2. File Location and Discovery
 
-Place the file at:
+`blueprint.txt` is a machine-readable operational contract for agents — not
+page content, not marketing copy. It belongs in `/.well-known/` per RFC 8615,
+which designates that path for site-wide machine-readable contracts.
+
+**Primary location (SHOULD):**
+
+```
+https://yourapp.com/.well-known/blueprint.txt
+```
+
+**Root fallback (MUST also be checked by agents):**
 
 ```
 https://yourapp.com/blueprint.txt
 ```
 
-Reference it from your `llms.txt` so AI crawlers already reading that file can follow the pointer:
+Agents MUST check the `.well-known/` path first, then fall back to root.
+Publishers SHOULD serve from `.well-known/` and MAY also serve from root for
+backwards compatibility. Both locations serving the same file is valid.
+
+**Why `.well-known/` and not root:**
+`llms.txt`, `robots.txt`, and `sitemap.xml` are root-level files from an earlier
+era of web conventions — they describe content for crawlers. Blueprint Protocol
+is different: it is an operational contract that tells agents how to invoke an
+app. That distinction maps directly to the RFC 8615 intent. `.well-known/` says
+"this is infrastructure for machines operating on this domain."
+
+**For indie developers and quick deployments:**
+The root fallback means you can start with `blueprint.txt` at root today and
+move it to `.well-known/` when ready. Nothing breaks either way.
+
+Reference it from your `llms.txt` so AI crawlers already reading that file can
+follow the pointer:
 
 ```
-Blueprint: https://yourapp.com/blueprint.txt
+Blueprint: https://yourapp.com/.well-known/blueprint.txt
 ```
 
 ### 2.1 Discovery Surfaces
@@ -42,12 +68,12 @@ Recommended discovery surfaces (SHOULD, not MUST):
 
 | Surface | Format |
 |---------|--------|
-| `llms.txt` | `Blueprint: https://yourapp.com/blueprint.txt` |
-| HTML `<head>` | `<link rel="blueprint" href="/blueprint.txt" type="text/plain" />` |
-| `robots.txt` | First line: `# Blueprint: https://yourapp.com/blueprint.txt` |
+| `llms.txt` | `Blueprint: https://yourapp.com/.well-known/blueprint.txt` |
+| HTML `<head>` | `<link rel="blueprint" href="/.well-known/blueprint.txt" type="text/plain" />` |
+| `robots.txt` | First line: `# Blueprint: https://yourapp.com/.well-known/blueprint.txt` |
 
 The three-surface pattern maximises likelihood that crawlers and agents find the
-file. Only the root URL is strictly required for a valid deployment.
+file. The `.well-known/` path with root fallback is the only required deployment.
 
 ---
 
