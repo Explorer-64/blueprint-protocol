@@ -154,6 +154,10 @@ I'm a vibe coder — I use AI to build and deploy because I'd rather spend my ti
 
 This protocol exists to stop the guessing. It's a 10-minute text file designed for the person who wants their tools to work the first time, every time. No enterprise bloat, no complex servers — just a map so the agent can get the job done while you focus on your actual work.
 
+In manufacturing we call this an SOP — a standard operating procedure. A document that tells anyone who needs to use a process exactly how to use it, step by step, without guessing. That's what blueprint.txt is. An SOP for AI agents.
+
+I built this by thinking out loud with AI — Claude and Gemini were my collaborators throughout. Every decision in this spec came from real problems I hit in production, argued through with AI until the reasoning held up. The ideas are mine. The AI helped me articulate them, stress-test them, and write them down.
+
 — Jill Mercer
 
 ---
