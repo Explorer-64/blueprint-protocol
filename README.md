@@ -1,30 +1,34 @@
 # Blueprint Protocol
 
-**A machine-readable standard for teaching AI agents how to use your web app.**
+**Pre-connection discoverability for MCP servers and web apps.**
 
 ---
 
 ## The Problem
 
-There are tens of thousands of MCP servers. An agent connecting to all of them burns its entire context window on tool definitions before it reads a single user message. Agents don't know which servers are relevant, so they connect to everything — and drown.
+Agents can't find the tools they need until the door is opened. They can't open the door until they know which door to open.
 
-Even when an agent connects to the right server, it still has to guess. It hallucinate button IDs, clicks the wrong things, calls the wrong tools, and fails silently. The result is frustrated users, broken automations, and AI assistants that look incompetent — even when the underlying model is excellent.
+This is the MCP discovery loop. There are tens of thousands of MCP servers. An agent has no way to evaluate which one is relevant to its task without connecting first. Connecting requires registration and credentials. But you don't register a server until you know it has what you need. The agent is blind until a human has already done the legwork.
+
+Even when the right server is registered and the agent connects, it still has to guess. It calls `tools/list`, reads through every tool definition, picks one, and hopes. It hallucinates button IDs, calls the wrong tools, fails silently. The result is frustrated users, broken automations, and AI assistants that look incompetent — even when the underlying model is excellent.
 
 `llms.txt` tells AI what your site *is*.  
 `sitemap.xml` tells crawlers what pages *exist*.  
 `robots.txt` tells bots where they *can't go*.
 
-Nothing tells an AI agent which server to connect to, which tool to call, or how to actually **do** something inside your app.
+Nothing tells an AI agent which server to connect to, which tool to call, or how to actually **do** something inside your app — before it connects.
 
 ---
 
 ## The Solution
 
-A `blueprint.txt` file at the root of your web app.
+A `blueprint.txt` file at `/.well-known/blueprint.txt` on your web app.
 
 One plain text file. No tooling required. Any developer can write one in under 10 minutes.
 
-An agent reads it and knows: is this app relevant to my task? If yes — which MCP tool to call, which API endpoint to hit, or exactly how to navigate the UI. It arrives with intent, not guesswork. It connects to your server once, calls the right tool directly, and stops burning context on everything else.
+`blueprint.txt` is publicly readable — no auth, no registration, no connection required. An agent can fetch it and evaluate your server before knocking on the door. It reads the CAPABILITIES block and knows immediately: does this server have what I need? What's the MCP URL? What transport? What inputs does the tool expect?
+
+The agent arrives informed, not speculative. It connects once, calls the right tool directly, and stops burning context on everything else.
 
 **For MCP specifically, this eliminates a protocol call entirely.**
 
@@ -40,7 +44,7 @@ This is all you need to get started (Format A — small app, everything inline):
 
 ```
 # BLUEPRINT: Habit Tracker
-# Version: 3.1.1
+# Version: 3.1.2
 # URL: https://yourhabittracker.app
 
 ## CAPABILITIES
@@ -164,7 +168,7 @@ I built this by thinking out loud with AI — Claude and Gemini were my collabor
 
 ## Status
 
-**Version: 3.1.1 — Draft**
+**Version: 3.1.2 — Draft**
 
 This is an open standard. Use it, fork it, extend it.  
 If you build something with it, open a PR to add your example.
