@@ -44,7 +44,7 @@ This is all you need to get started (Format A — small app, everything inline):
 
 ```
 # BLUEPRINT: Habit Tracker
-# Version: 3.1.2
+# Version: 3.1.3
 # URL: https://yourhabittracker.app
 
 ## CAPABILITIES
@@ -168,7 +168,7 @@ I built this by thinking out loud with AI — Claude and Gemini were my collabor
 
 ## Status
 
-**Version: 3.1.2 — Draft**
+**Version: 3.1.3 — Draft**
 
 This is an open standard. Use it, fork it, extend it.  
 If you build something with it, open a PR to add your example.
