@@ -40,54 +40,51 @@ That's not just cheaper discovery. It's the removal of a round trip.
 
 ## Minimal Example
 
-This is all you need to get started (Format A — small app, everything inline):
+This is a real blueprint from a live production app — [Imagcon](https://imagcon.app), an MCP server that generates deployment-ready app icon sets. Shown here in Format A (everything inline) to demonstrate the minimum required structure:
 
 ```
-# BLUEPRINT: Habit Tracker
+# BLUEPRINT: Imagcon [MCP]
 # Version: 3.1.3
-# URL: https://yourhabittracker.app
+# URL: https://imagcon.app
 
 ## CAPABILITIES
 
-## CAPABILITY: log-habit
-description: Mark a habit as complete for today and update the user's streak.
+## CAPABILITY: generate-icon-set
+description: Generate a deployment-ready icon set for PWA, iOS, and Android from a text description.
 input:
-  - name: habit-name
+  - name: prompt
     type: string
     required: true
-    description: The name of the habit to mark complete.
+    description: Text description of the icon to generate.
 output:
-  - type: confirmation
-    description: Habit logged. Streak count updated.
+  - type: file
+    description: ZIP containing all icon sizes, manifest.json, and platform folders.
 auth-required: true
-scope: form-submit
+scope: file-download
+permissions:
+  - data: write
 
-### UI
-steps:
-  1. ASSERT-AUTH
-  2. NAVIGATE /dashboard
-  3. WAIT [data-agent-id="habit-list"] (max: 10s)
-  4. CLICK [data-agent-id="habit-<<habit-name>>-complete"]
-  5. WAIT [data-agent-id="streak-updated"] (max: 5s)
-  6. VERIFY selector_exists [data-agent-id="streak-updated"]
+### MCP
+tool: generate_icon_set
 
 ## IDENTITY
-name: Habit Tracker
-description: Build and maintain daily habits. Log completions, track streaks, and stay accountable over time.
-category: productivity
-contact: support@yourhabittracker.app
+name: Imagcon
+description: Generate deployment-ready app icon sets for PWA, iOS, and Android from a text description.
+category: developer-tools
+contact: support@imagcon.app
 
 ## AUTH
-provider: firebase
-method: email
+provider: custom
+method: api-key
 
 ## ACCESS
+preferred: mcp
 last-resort: ui
 ```
 
-That's a complete, working blueprint. An AI agent can read the CAPABILITIES block and log a habit without reading anything else.
+That's a complete, working blueprint. An AI agent can read the CAPABILITIES block and generate an icon set without reading anything else.
 
-**Larger apps use Format B** — an index in the CAPABILITIES block pointing to individual capability files. Agents fetch only the file they need. See [SPEC.md](./SPEC.md) for the full Format B syntax and the [Imagcon example](https://imagcon.app/blueprint.txt) for a live reference implementation.
+**Larger apps use Format B** — an index in the CAPABILITIES block pointing to individual capability files. Agents fetch only the file they need. See [SPEC.md](./SPEC.md) for the full Format B syntax and [Imagcon's live blueprint](https://imagcon.app/.well-known/blueprint.txt) for the full production implementation.
 
 ---
 
@@ -122,10 +119,10 @@ Blueprint is designed for indie developers and small teams — not enterprise so
 
 | Example | What it shows |
 |---------|--------------|
-| [Habit Tracker](./examples/habit-tracker.txt) | The floor — no API, no MCP, UI only. Any app can start here. |
-| [Demo Video Tool](./examples/demo-video-tool.txt) | The ceiling — MCP-first, blueprint consumer, async jobs. |
+| [Imagcon](https://imagcon.app/.well-known/blueprint.txt) | Live production app — MCP-first, Format B index, multiple capabilities. |
+| [Demo Video Tool](./examples/demo-video-tool.txt) | MCP-first, blueprint consumer, async jobs. |
 
-Most apps live somewhere in between. Start with the habit tracker pattern and add layers only when you have them.
+Most apps live somewhere in between. Start with Format A and add layers only when you have them.
 
 ---
 
