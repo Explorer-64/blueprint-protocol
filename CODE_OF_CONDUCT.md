@@ -12,7 +12,7 @@ Violations can be reported to the maintainer at the contact listed in the repo. 
 
 ## Scope
 
-This code of conduct applies to all project spaces — issues, pull requests, discussions, and any other forum associated with Blueprint Protocol.
+This code of conduct applies to all project spaces - issues, pull requests, discussions, and any other forum associated with Blueprint Protocol.
 
 ---
 
