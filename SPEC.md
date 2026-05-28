@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v3.1.1
+# Blueprint Protocol — Specification v3.1.3
 
 **Status:** Draft  
 **Published:** 2026-04-13  
@@ -400,6 +400,8 @@ output:
     description: <what the agent gets back>
 auth-required: <true | false>
 scope: <read-only | form-submit | file-download | account-modify | financial-transaction | destructive>
+permissions:
+  - <resource>: <read | write | delete>
 
 ### MCP
 tool: <mcp-tool-name>
@@ -637,7 +639,47 @@ Use `financial-transaction` for any capability that initiates a payment or purch
 
 ---
 
-## 15. Relationship to Other Standards
+## 15. Permission Values
+
+The optional `permissions` field declares what data resources a capability accesses and at what level. `scope` declares how risky the operation is — `permissions` declares what data it touches. Both together give an agent everything it needs to make an informed decision before connecting.
+
+```
+permissions:
+  - <resource>: <read | write | delete>
+```
+
+| Resource | Meaning |
+|----------|---------|
+| `profile` | User profile data — name, email, avatar |
+| `files` | User files or documents |
+| `billing` | Payment methods, invoices, subscription data |
+| `account` | Account settings and preferences |
+| `contacts` | User contacts or address book |
+| `calendar` | Calendar events |
+| `data` | App-specific user data (general) |
+
+Access levels: `read`, `write`, `delete`
+
+Example:
+
+```
+## CAPABILITY: export-expenses
+auth-required: true
+scope: file-download
+permissions:
+  - data: read
+  - files: write
+```
+
+Agents MUST surface declared permissions to the user before executing any capability with `write`, `delete`, or `billing` permissions.
+
+`permissions` is optional. Omit it when the capability accesses no user data beyond what auth already covers.
+
+Do not invent resource tokens outside this list.
+
+---
+
+## 16. Relationship to Other Standards
 
 | Standard | Purpose | Blueprint's role |
 |----------|---------|-----------------|
