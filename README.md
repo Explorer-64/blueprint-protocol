@@ -163,7 +163,7 @@ In manufacturing we call this an SOP — a standard operating procedure. A docum
 
 I built this by thinking out loud with AI — Claude and Gemini were my collaborators throughout. Every decision in this spec came from real problems I hit in production, argued through with AI until the reasoning held up. The ideas are mine. The AI helped me articulate them, stress-test them, and write them down.
 
-— Jill Mercer
+— Abe Reimer
 
 ---
 

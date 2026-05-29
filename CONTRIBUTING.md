@@ -47,4 +47,4 @@ Open a Discussion — not an issue. Issues are for bugs and concrete proposals. 
 
 ---
 
-*Blueprint Protocol is maintained by Jill Mercer. Licensed under MIT.*
+*Blueprint Protocol is maintained by Abe Reimer. Licensed under MIT.*
