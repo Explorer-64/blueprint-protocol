@@ -16,4 +16,4 @@ This code of conduct applies to all project spaces - issues, pull requests, disc
 
 ---
 
-*Jill Mercer, maintainer*
+*Abe Reimer, maintainer*
