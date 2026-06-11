@@ -393,3 +393,21 @@ infrastructure addresses the shortlist step.
 
 Full methodology, raw results, and reproducible test harness:
 https://stackapps.app/mcp-blueprint-results
+
+---
+
+## Why Transport Metadata Matters: Preventing Silent Billing Loops
+
+When a blueprint does not declare transport metadata, clients guess how to connect. In stateless environments, that guess is expensive.
+
+Imagcon's MCP server runs on Cloud Run in stateless mode.
+
+Example: https://imagcon.app/.well-known/blueprint.txt
+
+Stateless environments do not support persistent SSE connections. When an IDE client attempts a standard long-lived GET stream anyway, it hits Cloud Run's 301-second request timeout, disconnects, and immediately reconnects. It does this on a loop.
+
+The client shows "Connected." Tools never populate. Cloud Run bills per-second for active requests, so this silent loop costs roughly $1-2/day per user with zero tool calls executed. Nothing in the UI tells you it is happening.
+
+Blueprint helps avoid this. The `## MCP` block declares `preferred-transport: streamable_http`. The `### TRANSPORT (stdio)` sub-block provides the exact local install command via `uvx`. A client that reads the blueprint before connecting knows the architectural constraints of the environment before it tries anything. It never attempts SSE. The loop never starts.
+
+Blueprint does not patch a broken connection. It provides the information needed to avoid making the wrong one.
