@@ -1,7 +1,7 @@
-# Blueprint Protocol — Specification v3.1.3
+# Blueprint Protocol — Specification v3.1.4
 
 **Status:** Draft  
-**Published:** 2026-04-13  
+**Published:** 2026-06-27  
 **Author:** Abe Reimer
 
 ---
@@ -456,6 +456,7 @@ browse-inspiration: https://imagcon.app/blueprints/browse-inspiration.txt | ui
 | Actor | Meaning |
 |-------|---------|
 | `mcp` | Agent invokes via MCP tool — fetch the capability file for tool name and parameters |
+| `api` | Agent invokes directly via HTTP — fetch the capability file for method, endpoint, and parameters |
 | `ui` | Agent can automate via UI steps — fetch the capability file for step-by-step flow |
 | `human-only` | Agent MUST NOT attempt this capability — intended for human users only |
 
