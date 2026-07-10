@@ -411,3 +411,13 @@ The client shows "Connected." Tools never populate. Cloud Run bills per-second f
 Blueprint helps avoid this. The `## MCP` block declares `preferred-transport: streamable_http`. The `### TRANSPORT (stdio)` sub-block provides the exact local install command via `uvx`. A client that reads the blueprint before connecting knows the architectural constraints of the environment before it tries anything. It never attempts SSE. The loop never starts.
 
 Blueprint does not patch a broken connection. It provides the information needed to avoid making the wrong one.
+
+## Why "Same File" Means One File, Not a Copy
+
+Blueprint recommends serving from `.well-known/` with a root fallback for backwards compatibility. Early guidance said both locations should serve "the same file" — but that phrase didn't say how, and a copy technically satisfies it too. Imagcon's setup was two physical files with identical content at launch. Months later, only the `.well-known/` copy was updated. The root copy kept serving the old version, silently. Both URLs returned 200. Nothing signaled the drift.
+
+The fix: `.well-known/blueprint.txt` and `/blueprint.txt` are now the same file at the infrastructure level, not two files with the same content. On Firebase Hosting this is a two-line `rewrites` entry in `firebase.json` pointing the root path at the `.well-known/` file. On other platforms it's a redirect or a symlink — whatever your host supports for making one path resolve to another without duplicating bytes.
+
+With an alias, a version bump, a typo fix, or a new capability propagates to every discovery surface atomically, because there is nothing left to keep in sync.
+
+The spec now states this as a MUST: additional discovery locations have to be aliases of the canonical file, never copies.

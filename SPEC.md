@@ -1,7 +1,7 @@
-# Blueprint Protocol — Specification v3.1.4
+# Blueprint Protocol — Specification v3.2.0
 
 **Status:** Draft  
-**Published:** 2026-06-27  
+**Published:** 2026-07-10  
 **Author:** Abe Reimer
 
 ---
@@ -42,7 +42,14 @@ https://yourapp.com/blueprint.txt
 
 Agents MUST check the `.well-known/` path first, then fall back to root.
 Publishers SHOULD serve from `.well-known/` and MAY also serve from root for
-backwards compatibility. Both locations serving the same file is valid.
+backwards compatibility.
+
+A blueprint MUST have exactly one canonical file. Any additional discovery
+location — the root fallback, or any other path — MUST be an alias to that
+canonical file (a server rewrite, redirect, or symlink), never a separate
+physical copy. A copy silently diverges the moment either file is updated
+without the other, and there's no error signal when it happens — both URLs
+keep returning 200, one of them is just wrong.
 
 **Why `.well-known/` and not root:**
 `llms.txt`, `robots.txt`, and `sitemap.xml` are root-level files from an earlier
@@ -286,7 +293,42 @@ users for credentials before attempting to launch or connect.
     format: <prefix or pattern — e.g. ic_live_*>
 ```
 
-### 8.3 Full example
+### 8.3 CLIENT-CONFIGS Sub-block (optional)
+
+When an MCP server needs different setup instructions per client (Claude Code,
+Cursor, VS Code, Windsurf, Zed, and others), don't inline every client's
+config into the `## MCP` block — that's the fastest way to bloat a
+multi-client server's blueprint. Index them the same way `## CAPABILITIES`
+indexes tools: one line per client, pointing to a dedicated file.
+
+```
+### CLIENT-CONFIGS
+<client-name>: <URL to a file with that client's full setup>
+```
+
+Each linked file contains the setup instructions for exactly one client —
+nothing else. An agent automating setup, or a human following instructions
+for their own IDE, fetches only the file that applies to them.
+
+Linked client files SHOULD open with a `## CLIENT: <name>` header and end
+with a `secret-storage:` line describing where that client keeps the
+credential (a config file, an OS keychain, a CLI argument). This gives every
+file the same shape regardless of which client it documents.
+
+Example (Imagcon, 10 client files, one line each in the index):
+
+```
+### CLIENT-CONFIGS
+claude-code-cli: https://imagcon.app/blueprints/mcp-clients/claude-code-cli.txt
+cursor: https://imagcon.app/blueprints/mcp-clients/cursor.txt
+vscode-copilot: https://imagcon.app/blueprints/mcp-clients/vscode-copilot.txt
+```
+
+This is the same index-of-links idiom `## CAPABILITIES` establishes, applied
+to a second case: content that varies per-reader and shouldn't be loaded by
+every reader.
+
+### 8.4 Full example
 
 ```
 ## MCP
@@ -459,6 +501,16 @@ browse-inspiration: https://imagcon.app/blueprints/browse-inspiration.txt | ui
 | `api` | Agent invokes directly via HTTP — fetch the capability file for method, endpoint, and parameters |
 | `ui` | Agent can automate via UI steps — fetch the capability file for step-by-step flow |
 | `human-only` | Agent MUST NOT attempt this capability — intended for human users only |
+| `x402` | Agent invokes via HTTP but must satisfy an x402 payment challenge — requires a funded wallet and on-chain signing capability, prerequisites a plain `api` caller does not have |
+
+**Adding new actor values:** A new actor value is justified only when it names
+a distinct class of caller with different prerequisites — not a transport or
+implementation variant of an existing class. A payment-gated endpoint that
+requires a funded wallet and signing capability (`x402`) is a different caller
+class than a plain HTTP client (`api`). A tool that only runs via local stdio
+versus one also available over hosted HTTP is still the same caller class
+(`mcp`) — that distinction belongs in a prose note under the `## MCP` block,
+not in the actor tag.
 
 #### Rules for Format B
 
@@ -510,6 +562,43 @@ Referencing it in a step:
 ```
 CLICK [data-agent-id="generate-button"]
 ```
+
+### Disambiguating Repeated Elements
+
+Many UIs render the same interactive role multiple times — a resize button on
+every card in a gallery, a delete button on every row in a table.
+`data-agent-id` alone can't distinguish between them if the same role name
+repeats across the list.
+
+The RECOMMENDED pattern is a second attribute, `data-agent-key`, carrying the
+instance identifier. `data-agent-id` stays a stable, static role name;
+`data-agent-key` carries the dynamic value. Steps combine both in a compound
+selector:
+
+```html
+<button data-agent-id="resize-button" data-agent-key="img_abc123">Resize</button>
+```
+
+```
+CLICK [data-agent-id="resize-button"][data-agent-key="<<image-key>>"]
+```
+
+This keeps `data-agent-id` free of dynamic content entirely, which avoids the
+selector normalization problem described in §12 — an attribute *value* has no
+CSS-safety constraint, so nothing needs to be transliterated or stripped to
+make it safe.
+
+Agents obtain the key value either from a prior tool/API response (e.g. an
+`image_key` returned by an earlier capability call) or by reading the
+`data-agent-key` attribute directly off the relevant element in the DOM — for
+example, reading it from a `data-agent-id="gallery-image-card"` element before
+clicking that card's action button. If no key is available and the task
+doesn't specify one, agents SHOULD default to the first matching element and
+note the assumption.
+
+Any step action MAY use a compound selector combining `data-agent-id` and
+`data-agent-key` wherever a single `[data-agent-id="x"]` selector is shown
+below.
 
 ### Available Step Actions
 
@@ -564,7 +653,14 @@ Standard variable names:
 | `<<file-path>>` | A local file the user provides |
 | `<<api-key>>` | An API key from the user |
 
-### Variable Normalization in Selectors
+### Variable Normalization in Selectors (legacy pattern)
+
+For repeated elements, prefer `data-agent-key` (§11) over interpolating a
+variable directly into `data-agent-id` — it avoids the entire normalization
+problem this section exists to solve. This pattern remains valid for existing
+implementations and for cases where the id itself is inherently unique and
+meaningful on its own, but new blueprints SHOULD use the compound-selector
+pattern instead. It may be deprecated in a future major version.
 
 Variables may be interpolated inside `data-agent-id` values to target dynamic elements:
 
