@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v3.2.0
+# Blueprint Protocol — Specification v3.2.1
 
 **Status:** Draft  
 **Published:** 2026-07-10  
@@ -329,6 +329,12 @@ to a second case: content that varies per-reader and shouldn't be loaded by
 every reader.
 
 ### 8.4 Full example
+
+The examples in this section (and the CLIENT-CONFIGS example in §8.3) are
+illustrative snapshots — they will drift from the live file over time, the
+same way any frozen copy does.
+
+Live reference: https://imagcon.app/blueprint.txt
 
 ```
 ## MCP
