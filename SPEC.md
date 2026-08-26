@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v3.2.1
+# Blueprint Protocol — Specification v3.3.0
 
 **Status:** Draft  
 **Published:** 2026-07-10  
@@ -315,6 +315,19 @@ with a `secret-storage:` line describing where that client keeps the
 credential (a config file, an OS keychain, a CLI argument). This gives every
 file the same shape regardless of which client it documents.
 
+A client file MUST document every transport the server supports **that this
+client supports** — not only the server's `preferred-transport`. A client file
+that omits a working transport sends its reader to another client's file to
+find the config that actually applies to them, which defeats the point of
+splitting by client. Where a client supports more than one, lead with the one
+that has the fewest prerequisites: a hosted HTTP endpoint needs a URL and a
+key, while stdio needs a runtime installed at a compatible version.
+
+Where a client reads config from more than one location, name the specific one
+to use and say why. Project-level config files are typically committed to
+version control; a file that tells a user to paste a live credential into one
+is telling them to commit a secret.
+
 Example (Imagcon, 10 client files, one line each in the index):
 
 ```
@@ -370,6 +383,37 @@ Individual capability blocks reference the tool name only:
 ### MCP
 tool: <tool-name>
 ```
+
+### 8.5 Schema Precedence
+
+Where a capability references a live machine-readable interface — an MCP tool,
+an OpenAPI operation — precedence is divided:
+
+- The **referenced interface** is normative for its own schema: parameter
+  names, types, required flags, and response shape.
+- The **blueprint** is normative for protocol metadata defined by this
+  specification: `actor`, `scope`, `auth-required`, `permissions`, `retrieval`,
+  `next-step`, and the ACCESS hierarchy. A referenced interface does not
+  declare these and cannot override them.
+
+If the blueprint and the referenced interface disagree about the interface
+itself, the interface takes precedence. Agents MUST resolve such a disagreement
+in favour of the interface regardless of read order. Precedence was previously
+undefined, which meant an agent encountering conflicting information could
+follow whichever definition it processed last — a choice determined by the
+runtime rather than by either document.
+
+The corollary for publishers is the more important half:
+
+- Declare the tool name and the parameters an agent needs in order to *decide*.
+- Do NOT restate the full schema. A duplicated schema is a schema that drifts,
+  and nothing fails loudly when it does — both documents keep serving 200.
+- Prefer a pointer over a copy for anything the live interface already
+  publishes in machine-readable form.
+
+This rule is what makes it safe for a capability file to stay short. A
+capability block that names a tool and stops is not underspecified — it is
+correctly deferring.
 
 ---
 
@@ -445,7 +489,9 @@ input:
     description: <what this param is>
 output:
   - type: <file | json | redirect | confirmation>
+    retrieval: <inline | url-public | url-signed | url-authenticated>
     description: <what the agent gets back>
+next-step: <what the caller must do with the output to finish the task>
 auth-required: <true | false>
 scope: <read-only | form-submit | file-download | account-modify | financial-transaction | destructive>
 permissions:
@@ -474,6 +520,88 @@ steps:
 Only include the invocation blocks that actually exist. A capability with only
 an API has no MCP or UI block.
 
+#### Parameter Naming
+
+`name:` under `input:` is the **literal wire name** of the parameter, exactly as
+the target interface accepts it — the MCP tool's schema key, the JSON body
+field, the query string key. Copy it verbatim. Never normalize it, never
+convert it to kebab-case.
+
+Kebab-case governs exactly two things: `<capability-id>` values and
+`<<variable>>` names. It does not govern parameter names. Applying it to them
+produces a blueprint that reads correctly and fails on every call:
+
+```
+input:
+  - name: image-key       # WRONG — the tool's schema key is image_key
+  - name: image_key       # correct
+```
+
+This failure is invisible at authoring time. The document looks well-formed, no
+parser can catch it, and the agent that trusted the blueprint gets an
+unknown-parameter error from the interface instead. Where a capability targets a
+live schema (§8.5), implementers SHOULD validate `input.name` values against
+that schema in CI — it is a mechanical check, and it is the only thing that
+catches this class of drift.
+
+#### Output Retrieval
+
+`retrieval` declares how the caller actually gets the output, which is not the
+same question as what the output is. It is optional; omit it when the output is
+returned directly.
+
+| Value | Meaning |
+|-------|---------|
+| `inline` | The content is in the response body — no further request |
+| `url-public` | A URL requiring no credential |
+| `url-signed` | A pre-authorised URL carrying its own expiry — fetch with a plain GET, no header |
+| `url-authenticated` | A URL requiring the caller to attach a credential on a second request |
+
+`url-authenticated` is a declaration that the capability cannot be completed in
+one hop. That is worth stating plainly because it is a common place for agent
+flows to stall: many runtimes are sandboxed against putting a live credential
+into an outbound request they construct themselves, so an agent can hold a valid
+key, complete the call, receive a URL, and still be unable to retrieve the
+result. Declaring it lets an agent detect that before it starts rather than
+two-thirds of the way through.
+
+Publishers SHOULD prefer `url-signed` over `url-authenticated` for generated
+artifacts. A short-lived signed URL is retrievable by any client that can make a
+GET, and it does not put a long-lived credential into a second request.
+
+Where `retrieval` is `url-signed`, the output SHOULD also carry the field naming
+its expiry so an agent can tell a stale URL from a broken one.
+
+#### next-step
+
+`next-step` declares what the caller must do with the output for the task to
+actually be finished. It is optional, and should be omitted where receiving the
+output *is* the completion.
+
+It exists because `output` answers "what do I get back" and stops there, which
+leaves a gap for any capability whose result is an input to work the agent still
+has to do. A capability can return exactly the right archive and still leave the
+task failed — files extracted to the wrong root, names changed on the way in, a
+required snippet never inserted. Nothing in the capability declaration would
+have caught it, because from the app's side the call succeeded.
+
+```
+next-step: Extract the archive into the project's static asset root. Do not
+  rename files — the manifest references them by path. Insert the returned
+  html_head value into the document <head>.
+```
+
+Two rules make it useful rather than decorative:
+
+- **State it as an instruction to the caller, not a description of the output.**
+  "Returns a ZIP of icons" is an `output` description. "Extract into the static
+  asset root without renaming" is a next-step.
+- **Where the app can supply a piece of what the caller would otherwise have to
+  derive, supply it and say so.** If the app knows the exact markup, the exact
+  config values, or the exact paths, emitting them turns an inference the agent
+  might get wrong into a value it can paste. An agent reconstructing something
+  the app already knows is a failure of the contract, not of the agent.
+
 ---
 
 ### Format B — Index (larger apps)
@@ -483,21 +611,41 @@ standalone capability file and declares the intended actor.
 
 ```
 ## CAPABILITIES
-<capability-id>: <url> | <actor>
-<capability-id>: <url> | <actor>
+<capability-id>: <url> | <actor> | <description>
+<capability-id>: <url> | <actor> | <description>
 ```
+
+The third field is an optional one-line description. Publishers SHOULD include
+it. Parsers MUST treat a two-field line as valid and the description as absent.
 
 Example:
 
 ```
 ## CAPABILITIES
-generate-icon-set: https://imagcon.app/blueprints/generate-icon-set.txt | mcp
-generate-splash-screens: https://imagcon.app/blueprints/generate-splash-screens.txt | mcp
-edit-image: https://imagcon.app/blueprints/edit-image.txt | human-only
-check-credits: https://imagcon.app/blueprints/check-credits.txt | mcp
-purchase-credits: https://imagcon.app/blueprints/purchase-credits.txt | human-only
-browse-inspiration: https://imagcon.app/blueprints/browse-inspiration.txt | ui
+generate-icon-set: https://imagcon.app/blueprints/generate-icon-set.txt | mcp | Generate a full PWA icon set from a text description
+generate-splash-screens: https://imagcon.app/blueprints/generate-splash-screens.txt | mcp | Generate iOS and Android splash screens from a text description
+edit-image: https://imagcon.app/blueprints/edit-image.txt | human-only | Crop, draw on, and refine an image in the browser editor
+check-credits: https://imagcon.app/blueprints/check-credits.txt | mcp | Read the account's remaining generation credits
+purchase-credits: https://imagcon.app/blueprints/purchase-credits.txt | human-only | Buy additional credits via checkout
+browse-inspiration: https://imagcon.app/blueprints/browse-inspiration.txt | ui | Browse the public gallery of generated images
 ```
+
+#### Why the description field matters
+
+Without it, the index gives an agent a capability id and an actor tag — enough
+to rule out the wrong *actor*, but not enough to pick the right *capability*.
+Faced with several plausible ids, the only way to find out which one matches the
+task is to fetch them and read them, so fetching most of the index becomes the
+rational strategy. The index stops being a routing table and becomes a directory
+listing.
+
+The cost shows up as an apparent verbosity problem — an agent reports that the
+blueprint was too long, when what actually happened is that it was made to load
+eight files to use one. One line per entry is what lets step 3 of the agent
+behaviour below fetch exactly one file.
+
+Keep descriptions short and task-phrased — what an agent would be trying to do,
+in the words it would use. This is the text a discovery agent matches against.
 
 #### Actor Values
 
@@ -533,6 +681,9 @@ not in the actor tag.
   agents should treat the actor declaration as a hard stop
 - `<capability-id>` MUST match `^[a-z0-9]+(-[a-z0-9]+)*$` (lowercase kebab-case)
 - IDs MUST be unique across the index
+- The description field, when present, MUST be a single line. Parsers MUST split
+  each entry on the first two `|` characters only and treat the entire remainder
+  of the line as the description
 
 #### Agent behaviour with Format B
 
@@ -789,12 +940,12 @@ Do not invent resource tokens outside this list.
 | `llms.txt` | Describes content for AI crawlers | Blueprint describes actions — `llms.txt` points to it |
 | `robots.txt` | Crawler access control | Blueprint declares agent scope permissions |
 | `sitemap.xml` | Page discovery | Blueprint declares capability discovery |
-| MCP Tool Definitions | Structured tool calls for LLM agents | Blueprint capability blocks map directly to MCP tool schemas |
+| MCP Tool Definitions | Structured tool calls for LLM agents | Blueprint names the tool and defers to its live schema (§8.5) |
 | OpenAPI | REST API documentation | Blueprint covers UI and non-REST interactions; links to OpenAPI for APIs |
 
 ---
 
-## 16. Parsing and Error Handling
+## 17. Parsing and Error Handling
 
 - Parsers SHOULD recover block-by-block; a malformed capability MUST NOT
   invalidate unrelated capabilities in the same document.
@@ -805,7 +956,7 @@ Do not invent resource tokens outside this list.
 
 ---
 
-## 17. Versioning
+## 18. Versioning
 
 Blueprint follows [Semantic Versioning](https://semver.org/).
 
