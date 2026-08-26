@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v3.4.0
+# Blueprint Protocol — Specification v3.5.1
 
 **Status:** Draft  
 **Published:** 2026-07-10  
@@ -303,7 +303,17 @@ auth: <env var name and what it contains>
 ```
 
 `preferred-transport` declares which transport the server is optimised for.
-Agents and tools SHOULD attempt this transport first.
+Agents and tools SHOULD attempt this transport first **among those whose
+declared requirements are met** (§8.1).
+
+That qualification matters. `preferred-transport` names the best transport, not
+the most widely available one, and those are frequently different: a stdio
+transport that can write directly to the caller's filesystem may be the better
+choice while also being the one that needs a specific runtime installed at a
+specific version. Without a way to declare prerequisites, a publisher has to
+choose which of those two things the flag means, and either choice is wrong for
+some callers. `requires:` separates them — the flag names the optimum, and the
+agent skips any transport it cannot satisfy.
 
 ### 8.1 TRANSPORT Sub-blocks
 
@@ -317,7 +327,15 @@ auto-launch or auto-connect without requiring the user to look up documentation.
 ### TRANSPORT (stdio)
 command: <runtime — e.g. uv, uvx, npx, node, python3>
 args: ["<arg1>", "<arg2>", ...]
+requires:
+  - <name>
+  - <name>: <version-constraint>
 ```
+
+`command` is the executable name alone. Every argument belongs in `args`, as a
+separate array element. A full command line placed in `command` describes a
+binary whose name is that entire string, and a tool auto-launching from it will
+attempt to execute exactly that and fail.
 
 **streamable_http transport:**
 
@@ -338,6 +356,74 @@ auth: bearer ${<SECRET_NAME>}
 Only declare transports that actually exist. `${VAR}` denotes a secret that
 must be resolved at runtime — declare all required secrets in
 `### REQUIRED-SECRETS`.
+
+#### Declaring Requirements
+
+`requires:` is an optional list of prerequisites the caller must already have
+for that transport to work. Each entry is a runtime, binary, or platform name,
+optionally carrying a version constraint:
+
+```
+### TRANSPORT (stdio)
+command: uv
+args: ["run", "imagcon-mcp", "--api-key", "${IMAGCON_API_KEY}"]
+requires:
+  - uv
+  - python: ">=3.11,<3.13"
+```
+
+Version constraints use the comparators `>=`, `>`, `<=`, `<`, and `==`, and MAY
+be combined with a comma to express a range. A bare name declares that the
+dependency must be present at any version.
+
+Omit `requires:` where a transport needs nothing the caller does not already
+have. A hosted HTTP transport typically needs only the ability to make an
+authenticated request, and declaring nothing is the accurate statement rather
+than an omission.
+
+- Agents SHOULD check declared requirements before attempting a transport.
+- An unmet requirement is NOT a failure of the capability or the server. Agents
+  MUST fall back to the next available transport rather than reporting the
+  server unreachable.
+- Declare only what the caller must supply. Dependencies the install step
+  resolves on its own are not prerequisites.
+
+Prerequisites are why a preferred transport is not always the right first
+attempt. Before `requires:`, they were expressible only as prose in a `note:`
+that no tool could act on, which forced `preferred-transport` to carry a meaning
+it was never defined to have.
+
+#### Version References in install and args
+
+`install:` and transport `args` SHOULD reference a package index or registry
+rather than a single build artifact.
+
+Most packaging ecosystems encode the version in the artifact filename — a Python
+wheel is `{name}-{version}-{python}-{abi}-{platform}.whl` per PEP 427 — and the
+installer parses that filename to determine what it is installing. A stable
+alias built by renaming or redirecting to one artifact therefore cannot work.
+`mypackage-latest.whl` fails version parsing before anything is downloaded, and
+a redirect fails the same way, because the client is still left resolving a name
+it cannot parse.
+
+Point at whatever resolves versions in that ecosystem — a package index, a
+registry — and let it choose the artifact:
+
+```
+install: uvx --index-url https://example.com/simple/ mypackage
+```
+
+Verify with the client that will actually run the command. An index or redirect
+that answers `curl` with a 200 proves the bytes are reachable; it does not prove
+an installer can resolve a version from them. Those are different failures and
+only one of them is being tested.
+
+Where a version must be pinned, treat every occurrence as a factual claim the
+release process is responsible for updating. `install:`, transport `args`, and
+any version stated elsewhere in the document drift independently, and a
+blueprint advertising a build that no longer matches its own description fails
+silently — the link resolves, the install succeeds, and the behaviour is not
+what the document describes.
 
 ### 8.2 REQUIRED-SECRETS Sub-block
 
@@ -418,6 +504,9 @@ auth: IMAGCON_API_KEY — user's Imagcon API key from account settings
 ### TRANSPORT (stdio)
 command: uv
 args: ["run", "imagcon-mcp", "--api-key", "${IMAGCON_API_KEY}"]
+requires:
+  - uv
+  - python: ">=3.11,<3.13"
 
 ### TRANSPORT (streamable_http)
 url: https://mcp.imagcon.app
@@ -431,7 +520,8 @@ auth: bearer ${IMAGCON_API_KEY}
 ```
 
 A tool reading this block can:
-- Pick a transport (stdio or streamable_http)
+- Pick a transport (stdio or streamable_http), skipping any whose `requires:`
+  it cannot satisfy
 - Know exactly how to launch or connect
 - Identify which secrets are needed and where to get them
 - Prompt the user for only the secrets that are missing
@@ -604,6 +694,28 @@ unknown-parameter error from the interface instead. Where a capability targets a
 live schema (§8.5), implementers SHOULD validate `input.name` values against
 that schema in CI — it is a mechanical check, and it is the only thing that
 catches this class of drift.
+
+**Where a capability has no programmatic interface.** If UI steps are the only
+invocation path, there is no wire format and nothing to copy from. The author
+names the inputs, and kebab-case is conventional — such names function as
+variables (§12) rather than as parameters.
+
+**Where a capability has both.** If a capability declares a programmatic
+invocation block *and* UI steps, the wire name governs, and UI steps reference
+the input by that same name verbatim. An input named `blueprint_url` is
+`<<blueprint_url>>` in a step, never `<<blueprint-url>>`. One input carries one
+name across every invocation path it supports.
+
+This does not change `data-agent-id` values, which are selector identifiers
+rather than parameters and remain kebab-case regardless. The two appear side by
+side and are not the same kind of name:
+
+```
+INPUT [data-agent-id="blueprint-url-input"] <<blueprint_url>>
+```
+
+The normalization rule in §12 applies only to interpolating a variable *into* a
+selector, and is unaffected by any of the above.
 
 #### Output Retrieval
 
