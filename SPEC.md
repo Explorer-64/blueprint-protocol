@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v3.5.0
+# Blueprint Protocol — Specification v3.5.1
 
 **Status:** Draft  
 **Published:** 2026-07-10  
@@ -694,6 +694,28 @@ unknown-parameter error from the interface instead. Where a capability targets a
 live schema (§8.5), implementers SHOULD validate `input.name` values against
 that schema in CI — it is a mechanical check, and it is the only thing that
 catches this class of drift.
+
+**Where a capability has no programmatic interface.** If UI steps are the only
+invocation path, there is no wire format and nothing to copy from. The author
+names the inputs, and kebab-case is conventional — such names function as
+variables (§12) rather than as parameters.
+
+**Where a capability has both.** If a capability declares a programmatic
+invocation block *and* UI steps, the wire name governs, and UI steps reference
+the input by that same name verbatim. An input named `blueprint_url` is
+`<<blueprint_url>>` in a step, never `<<blueprint-url>>`. One input carries one
+name across every invocation path it supports.
+
+This does not change `data-agent-id` values, which are selector identifiers
+rather than parameters and remain kebab-case regardless. The two appear side by
+side and are not the same kind of name:
+
+```
+INPUT [data-agent-id="blueprint-url-input"] <<blueprint_url>>
+```
+
+The normalization rule in §12 applies only to interpolating a variable *into* a
+selector, and is unaffected by any of the above.
 
 #### Output Retrieval
 
