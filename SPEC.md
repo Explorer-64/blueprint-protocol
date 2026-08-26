@@ -386,16 +386,22 @@ tool: <tool-name>
 
 ### 8.5 Schema Precedence
 
-Where a capability names a live machine-readable interface — an MCP tool, an
-OpenAPI operation — **that interface is normative and the blueprint is not.**
-The blueprint's job is discovery and selection: helping an agent find the app,
-decide the capability matches the task, and understand what it will get back.
-Once the agent is connected and the schema is in front of it, the schema wins
-on every parameter name, type, and required flag.
+Where a capability references a live machine-readable interface — an MCP tool,
+an OpenAPI operation — precedence is divided:
 
-Agents MUST resolve any disagreement in favour of the live schema, regardless
-of read order. Without a stated rule, an agent trusts whichever it read last,
-and which one that is depends on the runtime rather than on either document.
+- The **referenced interface** is normative for its own schema: parameter
+  names, types, required flags, and response shape.
+- The **blueprint** is normative for protocol metadata defined by this
+  specification: `actor`, `scope`, `auth-required`, `permissions`, `retrieval`,
+  `next-step`, and the ACCESS hierarchy. A referenced interface does not
+  declare these and cannot override them.
+
+If the blueprint and the referenced interface disagree about the interface
+itself, the interface takes precedence. Agents MUST resolve such a disagreement
+in favour of the interface regardless of read order. Precedence was previously
+undefined, which meant an agent encountering conflicting information could
+follow whichever definition it processed last — a choice determined by the
+runtime rather than by either document.
 
 The corollary for publishers is the more important half:
 
