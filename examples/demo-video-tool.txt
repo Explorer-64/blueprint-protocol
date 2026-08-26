@@ -33,15 +33,15 @@ last-resort: ui
 ## CAPABILITY: generate-demo-video
 description: Generate a professional demo video of any blueprint-ready app. Provide the target app's blueprint.txt URL — the tool reads the capability list, follows the UI steps exactly as written, and produces a narrated walkthrough video ready to publish.
 input:
-  - name: blueprint-url
+  - name: blueprint_url
     type: string
     required: true
     description: The full URL of the target app's blueprint.txt (e.g. https://yourapp.com/blueprint.txt). The target app must be blueprint-ready for this to succeed.
-  - name: capability-id
+  - name: capability_id
     type: string
     required: false
     description: ID of a specific capability to demo. If omitted, the tool demos all capabilities in sequence.
-  - name: narration-style
+  - name: narration_style
     type: string
     required: false
     description: "Tone for the auto-generated narration: professional, casual, or silent. Defaults to professional."
@@ -58,7 +58,7 @@ tool: generate_demo_video
 steps:
   1. ASSERT-AUTH
   2. NAVIGATE /new
-  3. INPUT [data-agent-id="blueprint-url-input"] <<blueprint-url>>
+  3. INPUT [data-agent-id="blueprint-url-input"] <<blueprint_url>>
   4. CLICK [data-agent-id="fetch-blueprint"]
   5. WAIT [data-agent-id="capability-list"] (max: 15s)
   6. VERIFY selector_exists [data-agent-id="capability-list"]
@@ -69,7 +69,7 @@ steps:
 ## CAPABILITY: check-video-status
 description: Check whether a previously requested demo video has finished rendering and get the download link when it is ready.
 input:
-  - name: job-id
+  - name: job_id
     type: string
     required: true
     description: The job ID returned by generate-demo-video.
@@ -85,7 +85,7 @@ tool: get_video_status
 ### UI
 steps:
   1. ASSERT-AUTH
-  2. NAVIGATE /videos/<<job-id>>
+  2. NAVIGATE /videos/<<job_id>>
   3. WAIT [data-agent-id="video-status"] (max: 5s)
   4. VERIFY selector_exists [data-agent-id="video-status"]
 
