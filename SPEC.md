@@ -1,4 +1,4 @@
-# Blueprint Protocol — Specification v3.3.0
+# Blueprint Protocol — Specification v3.4.0
 
 **Status:** Draft  
 **Published:** 2026-07-10  
@@ -104,6 +104,65 @@ in the CAPABILITIES block can fetch the relevant file and stop — it never need
 to read IDENTITY, SUMMARY, AUTH, or MCP from the root blueprint. Those blocks
 exist for human developers, crawlers, and agents that need to authenticate or
 install the MCP server.
+
+The list above is the set of blocks this specification defines. It is not a
+closed set — see §3.1.
+
+### 3.1 Extension Blocks
+
+A publisher MAY add a block this specification does not define — vendor pricing
+tiers, program terms, internal notes. Extension blocks MUST be prefixed `X-`:
+
+```
+## X-FREE-TIER
+## X-PARTNER-TERMS
+```
+
+This specification will never define a block name beginning with `X-`. That
+guarantee is what makes the prefix safe to use permanently: a publisher can
+name an extension block without any risk that a future version claims the same
+name and silently changes its meaning for every conforming parser. An
+unprefixed custom block carries exactly that risk.
+
+Rules:
+
+- Parsers MUST ignore any block they do not recognise and MUST NOT treat it as
+  a malformed document. This follows from the block-by-block recovery rule in
+  §17 and is restated here because it is the property extension blocks depend
+  on.
+- Agents MUST NOT be required to read an extension block in order to invoke a
+  capability correctly.
+- **Normative content MUST NOT live only in an extension block.** Anything that
+  constrains what an agent may do, how much of it, or what it will be charged
+  MUST also be reachable from a block this specification defines.
+
+The last rule is the one that matters, and it is stated as a mechanical test on
+purpose:
+
+> **Reachability test.** Starting at the root blueprint and following only
+> blocks and fields this specification defines, can a parser reach this content?
+
+If it cannot, the content is unreachable and the rule is violated. The test
+requires no judgement about what the content means, so a linter can run it —
+which is the point of framing it this way. The defect is unreachability, not
+customness.
+
+A conforming agent has no reason to open a block it does not recognise. An app
+that publishes its rate limits or free tier only in `## X-FREE-TIER` has
+documented them for humans reading the file and for no agent at all. The
+information isn't wrong — it is unreachable, and nothing signals that it was
+missed. The agent proceeds on exactly the assumptions the publisher believed
+they had corrected, and the failure surfaces later as an unexplained refusal or
+an unexpected charge.
+
+Where cross-cutting information belongs instead:
+
+| Information | Home |
+|-------------|------|
+| Limits, quotas, or balances spanning many capabilities | A capability that reports them, referenced via `constrained-by` (§10) |
+| A constraint on one capability | That capability's own block |
+| Prerequisites that define a class of caller | The actor tag (§10) |
+| Price of a payment-gated call | The payment challenge itself, per §8.5 |
 
 ---
 
@@ -496,6 +555,8 @@ auth-required: <true | false>
 scope: <read-only | form-submit | file-download | account-modify | financial-transaction | destructive>
 permissions:
   - <resource>: <read | write | delete>
+constrained-by:
+  - <capability-id>
 
 ### MCP
 tool: <mcp-tool-name>
@@ -601,6 +662,39 @@ Two rules make it useful rather than decorative:
   config values, or the exact paths, emitting them turns an inference the agent
   might get wrong into a value it can paste. An agent reconstructing something
   the app already knows is a failure of the contract, not of the agent.
+
+#### Cross-Cutting Constraints
+
+`constrained-by` is an optional list of `<capability-id>` values naming other
+capabilities that govern whether, or how often, this one can be invoked — a
+credit balance, a plan tier, a rate limit, a quota.
+
+```
+## CAPABILITY: generate-icon-set
+constrained-by:
+  - check-credits
+```
+
+Each referenced id MUST exist in the same document's capability set — the index
+in Format B, or the inline capabilities in Format A. Agents SHOULD resolve a
+`constrained-by` reference before invoking a capability whose `scope` is
+`financial-transaction`, and MAY resolve it for any capability.
+
+**Declare the constraint once, reference it from the capabilities it governs.**
+The referenced capability is where the limits actually live; every capability
+subject to them carries a pointer, not a copy.
+
+This is the same reasoning as §8.5 applied one level up. A free-tier limit
+restated in a dozen capability files is a limit that will be correct in some of
+them after the next pricing change, and nothing will fail loudly when it isn't.
+A capability that reports the limit has the further advantage of being generated
+rather than transcribed, so it answers with the caller's *actual* remaining
+balance instead of a number that was true when the file was written.
+
+Without this pattern, cross-cutting limits have nowhere correct to go. They end
+up duplicated across capability files, or in a custom top-level block where no
+agent will read them (§3.1) — which is the wrong turn this field exists to
+prevent.
 
 ---
 
