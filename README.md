@@ -44,7 +44,7 @@ This is all you need to get started (Format A — small app, everything inline):
 
 ```
 # BLUEPRINT: Habit Tracker
-# Version: 3.1.3
+# Version: 3.5.1
 # URL: https://yourhabittracker.app
 
 ## CAPABILITIES
@@ -169,7 +169,7 @@ I built this by thinking out loud with AI — Claude and Gemini were my collabor
 
 ## Status
 
-**Version: 3.1.3 — Draft**
+**Version: 3.5.1 — Draft**
 
 This is an open standard. Use it, fork it, extend it.  
 If you build something with it, open a PR to add your example.
@@ -193,3 +193,5 @@ Of three crawlers assessed, Gemini detected, fetched, and positively referenced 
 Gemini's detection is significant given its direct connection to Google Search. The result suggests the three-surface pattern meaningfully increases fetch likelihood for reasoning models, though a single test is not conclusive. Further real-world data is needed.
 
 See [IMPLEMENTATION.md](./IMPLEMENTATION.md) for the full discovery pattern used in the test.
+
+In November 2026, Muse (Meta's personal AI agent) picked up [StackBooks](https://stackbooks.app) cold, with no custom integration: it read the public blueprint at `stackbooks.app/.well-known/blueprint.txt`, followed it to the MCP server at `https://api.stackbooks.app/mcp/`, connected with a bearer API key (`sb_live_*`, made in-app at `stackbooks.app/?view=agent-keys`), listed 154 tools, and made a verified read call — first try, no guessing, no custom code. Approving an agent's pending writes remains human-only.
